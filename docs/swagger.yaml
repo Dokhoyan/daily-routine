@@ -1,0 +1,915 @@
+openapi: 3.0.3
+info:
+  title: Daily Routine API
+  description: API для управления ежедневными привычками и настройками пользователей
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер разработки
+  - url: https://api.example.com
+    description: Продакшн сервер
+
+tags:
+  - name: Authentication
+    description: Аутентификация и авторизация
+  - name: Users
+    description: Управление пользователями
+  - name: Settings
+    description: Настройки пользователей
+  - name: Habits
+    description: Управление привычками
+  - name: Test
+    description: Тестовые эндпоинты (только в тестовом режиме)
+
+paths:
+  /login/telegram:
+    post:
+      tags:
+        - Authentication
+      summary: Вход или регистрация через Telegram
+      description: Аутентифицирует пользователя через Telegram или создает нового пользователя
+      operationId: loginOrRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - hash
+              properties:
+                id:
+                  type: string
+                  description: ID пользователя в Telegram
+                username:
+                  type: string
+                  description: Имя пользователя в Telegram
+                photo_url:
+                  type: string
+                  description: URL фотографии пользователя
+                auth_date:
+                  type: string
+                  description: Unix timestamp авторизации
+                hash:
+                  type: string
+                  description: HMAC-SHA256 подпись данных
+            example:
+              id: "123456789"
+              username: "john_doe"
+              photo_url: "https://t.me/i/userpic/123/john_doe.jpg"
+              auth_date: "1699123456"
+              hash: "abc123def456..."
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/getaccesstoken:
+    post:
+      tags:
+        - Authentication
+      summary: Получить новый access токен
+      description: Обновляет access токен по refresh токену
+      operationId: getAccessToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Refresh токен для обновления access токена
+            example:
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Успешное получение access токена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: Новый access токен
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/getrefreshtoken:
+    post:
+      tags:
+        - Authentication
+      summary: Получить новую пару токенов
+      description: Обновляет пару access и refresh токенов по refresh токену
+      operationId: getRefreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Refresh токен для обновления пары токенов
+            example:
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Успешное получение пары токенов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/revoke:
+    post:
+      tags:
+        - Authentication
+      summary: Отозвать токен
+      description: Отзывает указанный токен (access или refresh), добавляя его в blacklist
+      operationId: revokeToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Токен для отзыва (access или refresh)
+            example:
+              token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Токен успешно отозван
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token revoked successfully"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Токен не найден
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/revokeall:
+    post:
+      tags:
+        - Authentication
+      summary: Отозвать все токены пользователя
+      description: Отзывает все активные токены текущего авторизованного пользователя
+      operationId: revokeAllTokens
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Все токены успешно отозваны
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "All tokens revoked successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/test/token:
+    post:
+      tags:
+        - Test
+      summary: Получить тестовые токены
+      description: Генерирует тестовые токены для указанного пользователя (только в тестовом режиме)
+      operationId: testToken
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  format: int64
+                  description: ID пользователя (опционально, используется дефолтный если не указан)
+            example:
+              user_id: 123456789
+      responses:
+        '200':
+          description: Успешная генерация тестовых токенов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tokens:
+                    $ref: '#/components/schemas/TokenPair'
+                  message:
+                    type: string
+        '403':
+          description: Тестовый режим отключен
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Получить всех пользователей
+      description: Возвращает список всех пользователей (публичный эндпоинт)
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: Успешное получение списка пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Получить пользователя по ID
+      description: Возвращает информацию о пользователе по его ID (требует авторизации)
+      operationId: getUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID пользователя
+      responses:
+        '200':
+          description: Успешное получение пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Users
+      summary: Обновить пользователя
+      description: Обновляет информацию о пользователе (username и/или photo_url). Требует авторизации, можно обновлять только свой профиль
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Новый username (опционально)
+                photo_url:
+                  type: string
+                  description: Новый URL фотографии профиля (опционально)
+            example:
+              username: "new_username"
+              photo_url: "https://example.com/new_photo.jpg"
+      responses:
+        '200':
+          description: Пользователь успешно обновлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User updated successfully"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно обновлять только свой профиль)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      $ref: '#/paths/~1users~1{id}/put'
+
+  /users/{id}/settings:
+    get:
+      tags:
+        - Settings
+      summary: Получить настройки пользователя
+      description: Возвращает настройки пользователя (требует авторизации, можно получать только свои настройки)
+      operationId: getSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID пользователя
+      responses:
+        '200':
+          description: Успешное получение настроек
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно получать только свои настройки)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+        - Settings
+      summary: Обновить настройки уведомлений
+      description: Обновляет настройки уведомлений пользователя (do_not_disturb и/или notify_times). Требует авторизации, можно обновлять только свои настройки
+      operationId: updateSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                do_not_disturb:
+                  type: boolean
+                  description: Флаг "не беспокоить" (true - включен, false - выключен)
+                notify_times:
+                  type: array
+                  items:
+                    type: string
+                  description: 'Список времен для уведомлений (формат "HH:MM")'
+            example:
+              do_not_disturb: false
+              notify_times: ["09:00", "18:00"]
+      responses:
+        '200':
+          description: Настройки успешно обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно обновлять только свои настройки)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{id}/settings/timezone:
+    put:
+      tags:
+        - Settings
+      summary: Обновить часовой пояс
+      description: Обновляет часовой пояс пользователя в формате IANA (например, "Europe/Moscow", "America/New_York"). Требует авторизации, можно обновлять только свои настройки
+      operationId: updateTimezone
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - timezone
+              properties:
+                timezone:
+                  type: string
+                  description: Часовой пояс в формате IANA (например, "UTC", "Europe/Moscow", "America/New_York")
+                  example: "Europe/Moscow"
+            example:
+              timezone: "Europe/Moscow"
+      responses:
+        '200':
+          description: Часовой пояс успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '400':
+          description: Неверный формат timezone или timezone не может быть пустым
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "timezone validation failed: invalid timezone: unknown time zone Invalid/Timezone"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно обновлять только свои настройки)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /habits:
+    post:
+      tags:
+        - Habits
+      summary: Создать привычку
+      description: Создает новую привычку для текущего пользователя (требует авторизации)
+      operationId: createHabit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - type
+                - value
+              properties:
+                title:
+                  type: string
+                  description: Название привычки
+                type:
+                  type: string
+                  enum: [time, count]
+                  description: Тип привычки (time - по времени, count - по количеству)
+                unit:
+                  type: string
+                  description: Единица измерения (например, "минуты", "страницы", "литры")
+                value:
+                  type: integer
+                  description: Целевое значение (минуты или количество)
+                is_active:
+                  type: boolean
+                  description: Активна ли привычка (по умолчанию true)
+                is_beneficial:
+                  type: boolean
+                  description: Полезная ли привычка (true - полезная, false - вредная, по умолчанию true)
+            example:
+              title: "Читать книгу"
+              type: "count"
+              unit: "страницы"
+              value: 50
+              is_active: true
+              is_beneficial: true
+      responses:
+        '201':
+          description: Привычка успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+        - Habits
+      summary: Получить все привычки пользователя
+      description: Возвращает список всех привычек текущего пользователя (требует авторизации)
+      operationId: getAllHabits
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Успешное получение списка привычек
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Habit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /habits/{id}:
+    get:
+      tags:
+        - Habits
+      summary: Получить привычку по ID
+      description: Возвращает информацию о привычке по её ID (требует авторизации, можно получать только свои привычки)
+      operationId: getHabit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID привычки
+      responses:
+        '200':
+          description: Успешное получение привычки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно получать только свои привычки)
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Habits
+      summary: Обновить привычку
+      description: Обновляет информацию о привычке (требует авторизации, можно обновлять только свои привычки)
+      operationId: updateHabit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID привычки
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Название привычки
+                type:
+                  type: string
+                  enum: [time, count]
+                  description: Тип привычки
+                unit:
+                  type: string
+                  description: Единица измерения
+                value:
+                  type: integer
+                  description: Целевое значение
+                is_active:
+                  type: boolean
+                  description: Активна ли привычка
+                is_done:
+                  type: boolean
+                  description: Выполнена ли привычка сегодня
+                is_beneficial:
+                  type: boolean
+                  description: Полезная ли привычка (true - полезная, false - вредная)
+                series:
+                  type: integer
+                  description: Текущая серия выполнения
+            example:
+              title: "Читать книгу"
+              type: "count"
+              unit: "страницы"
+              value: 50
+              is_active: true
+              is_done: false
+              is_beneficial: true
+              series: 5
+      responses:
+        '200':
+          description: Привычка успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно обновлять только свои привычки)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      $ref: '#/paths/~1habits~1{id}/put'
+    delete:
+      tags:
+        - Habits
+      summary: Удалить привычку
+      description: Удаляет привычку по её ID (требует авторизации, можно удалять только свои привычки)
+      operationId: deleteHabit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID привычки
+      responses:
+        '200':
+          description: Привычка успешно удалена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Habit deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (можно удалять только свои привычки)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'JWT токен авторизации. Формат: "Bearer {token}"'
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        username:
+          type: string
+          description: Имя пользователя
+        photo_url:
+          type: string
+          description: URL фотографии пользователя
+        auth_date:
+          type: string
+          format: date-time
+          description: Дата авторизации
+        tokentg:
+          type: string
+          description: Токен Telegram (обычно пустой)
+      example:
+        id: 123456789
+        username: "john_doe"
+        photo_url: "https://t.me/i/userpic/123/john_doe.jpg"
+        auth_date: "2024-01-01T00:00:00Z"
+        tokentg: ""
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: 'Access токен (TTL: 15 минут)'
+        refresh_token:
+          type: string
+          description: 'Refresh токен (TTL: 7 дней)'
+      example:
+        access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+      example:
+        user:
+          id: 123456789
+          username: "john_doe"
+          photo_url: "https://t.me/i/userpic/123/john_doe.jpg"
+          auth_date: "2024-01-01T00:00:00Z"
+          tokentg: ""
+        tokens:
+          access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    UserSettings:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        timezone:
+          type: string
+          description: Часовой пояс
+          example: "UTC"
+        do_not_disturb:
+          type: boolean
+          description: Флаг "не беспокоить"
+          default: false
+        notify_times:
+          type: array
+          items:
+            type: string
+          description: 'Список времен для уведомлений (формат "HH:MM")'
+          example: ["09:00", "18:00"]
+      example:
+        user_id: 123456789
+        timezone: "Europe/Moscow"
+        do_not_disturb: false
+        notify_times: ["09:00", "18:00"]
+
+    Habit:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID привычки
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя-владельца
+        title:
+          type: string
+          description: Название привычки
+        type:
+          type: string
+          enum: [time, count]
+          description: Тип привычки (time - по времени, count - по количеству)
+        unit:
+          type: string
+          description: Единица измерения (опционально)
+        value:
+          type: integer
+          description: Целевое значение (минуты или количество)
+        is_active:
+          type: boolean
+          description: Активна ли привычка
+          default: true
+        is_done:
+          type: boolean
+          description: Выполнена ли привычка сегодня
+          default: false
+        is_beneficial:
+          type: boolean
+          description: Полезная ли привычка (true - полезная, false - вредная)
+          default: true
+        series:
+          type: integer
+          description: Текущая серия выполнения
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания привычки
+      example:
+        id: 1
+        user_id: 123456789
+        title: "Читать книгу"
+        type: "count"
+        unit: "страницы"
+        value: 50
+        is_active: true
+        is_done: false
+        is_beneficial: true
+        series: 5
+        created_at: "2024-01-01T00:00:00Z"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+      example:
+        error: "Invalid request"
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Invalid JSON"
+
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Authorization header is required"
+
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "User not found"
+
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Failed to process request"
+
