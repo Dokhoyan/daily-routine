@@ -174,10 +174,15 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		log.Println("⚠️  Test mode enabled: /auth/test/token endpoint is available")
 	}
 
+	// Обертка для поддержки префикса /api
+	rootMux := http.NewServeMux()
+	rootMux.Handle("/api/", http.StripPrefix("/api", mux))
+	rootMux.Handle("/", mux) // Поддержка роутов без префикса для обратной совместимости
+
 	httpConfig := a.serviceProvider.HTTPConfig()
 	a.httpServer = &http.Server{
 		Addr:              httpConfig.Address(),
-		Handler:           mux,
+		Handler:           rootMux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
