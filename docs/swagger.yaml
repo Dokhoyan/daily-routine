@@ -1,8 +1,12 @@
 openapi: 3.0.3
 info:
   title: Daily Routine API
-  description: API для управления ежедневными привычками и настройками пользователей
-  version: 1.0.0
+  description: |
+    API для управления ежедневными привычками и настройками пользователей.
+    
+    **Важно:** Все endpoints, работающие с пользовательскими данными, используют ID пользователя из JWT токена.
+    Фронтенд не должен передавать user_id в URL или параметрах запроса.
+  version: 2.0.0
   contact:
     name: API Support
 
@@ -269,23 +273,15 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /users/{id}:
+  /user/me:
     get:
       tags:
         - Users
-      summary: Получить пользователя по ID
-      description: Возвращает информацию о пользователе по его ID (требует авторизации)
-      operationId: getUser
+      summary: Получить данные текущего пользователя
+      description: Возвращает информацию о текущем авторизованном пользователе. ID пользователя извлекается из JWT токена
+      operationId: getMe
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: ID пользователя
       responses:
         '200':
           description: Успешное получение пользователя
@@ -293,8 +289,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -302,19 +296,11 @@ paths:
     put:
       tags:
         - Users
-      summary: Обновить пользователя
-      description: Обновляет информацию о пользователе (username и/или photo_url). Требует авторизации, можно обновлять только свой профиль
-      operationId: updateUser
+      summary: Обновить данные текущего пользователя
+      description: Обновляет информацию о текущем авторизованном пользователе (username и/или photo_url). ID пользователя извлекается из JWT токена
+      operationId: updateMe
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: ID пользователя
       requestBody:
         required: true
         content:
@@ -346,32 +332,22 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Недостаточно прав (можно обновлять только свой профиль)
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     patch:
-      $ref: '#/paths/~1users~1{id}/put'
+      $ref: '#/paths/~1user~1me/put'
 
-  /users/{id}/settings:
+  /user/me/settings:
     get:
       tags:
         - Settings
-      summary: Получить настройки пользователя
-      description: Возвращает настройки пользователя (требует авторизации, можно получать только свои настройки)
-      operationId: getSettings
+      summary: Получить настройки текущего пользователя
+      description: Возвращает настройки текущего авторизованного пользователя. ID пользователя извлекается из JWT токена
+      operationId: getMeSettings
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: ID пользователя
       responses:
         '200':
           description: Успешное получение настроек
@@ -379,30 +355,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSettings'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Недостаточно прав (можно получать только свои настройки)
         '500':
           $ref: '#/components/responses/InternalServerError'
-    patch:
+    put:
       tags:
         - Settings
-      summary: Обновить настройки уведомлений
-      description: Обновляет настройки уведомлений пользователя (do_not_disturb и/или notify_times). Требует авторизации, можно обновлять только свои настройки
-      operationId: updateSettings
+      summary: Обновить настройки текущего пользователя
+      description: Обновляет настройки уведомлений текущего авторизованного пользователя (do_not_disturb и/или notify_times). ID пользователя извлекается из JWT токена
+      operationId: updateMeSettings
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: ID пользователя
       requestBody:
         required: true
         content:
@@ -432,28 +396,20 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Недостаточно прав (можно обновлять только свои настройки)
         '500':
           $ref: '#/components/responses/InternalServerError'
+    patch:
+      $ref: '#/paths/~1user~1me~1settings/put'
 
-  /users/{id}/settings/timezone:
+  /user/me/settings/timezone:
     put:
       tags:
         - Settings
-      summary: Обновить часовой пояс
-      description: Обновляет часовой пояс пользователя в формате IANA (например, "Europe/Moscow", "America/New_York"). Требует авторизации, можно обновлять только свои настройки
-      operationId: updateTimezone
+      summary: Обновить часовой пояс текущего пользователя
+      description: Обновляет часовой пояс текущего авторизованного пользователя в формате IANA (например, "Europe/Moscow", "America/New_York"). ID пользователя извлекается из JWT токена
+      operationId: updateMeTimezone
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: ID пользователя
       requestBody:
         required: true
         content:
@@ -488,8 +444,6 @@ paths:
                     example: "timezone validation failed: invalid timezone: unknown time zone Invalid/Timezone"
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Недостаточно прав (можно обновлять только свои настройки)
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -498,7 +452,7 @@ paths:
       tags:
         - Habits
       summary: Создать привычку
-      description: Создает новую привычку для текущего пользователя (требует авторизации)
+      description: Создает новую привычку для текущего авторизованного пользователя. ID пользователя извлекается из JWT токена
       operationId: createHabit
       security:
         - bearerAuth: []
@@ -553,8 +507,8 @@ paths:
     get:
       tags:
         - Habits
-      summary: Получить все привычки пользователя
-      description: Возвращает список всех привычек текущего пользователя (требует авторизации)
+      summary: Получить все привычки текущего пользователя
+      description: Возвращает список всех привычек текущего авторизованного пользователя. ID пользователя извлекается из JWT токена
       operationId: getAllHabits
       security:
         - bearerAuth: []
@@ -577,7 +531,7 @@ paths:
       tags:
         - Habits
       summary: Получить привычку по ID
-      description: Возвращает информацию о привычке по её ID (требует авторизации, можно получать только свои привычки)
+      description: Возвращает информацию о привычке по её ID. Можно получать только свои привычки. ID пользователя извлекается из JWT токена
       operationId: getHabit
       security:
         - bearerAuth: []
@@ -608,7 +562,7 @@ paths:
       tags:
         - Habits
       summary: Обновить привычку
-      description: Обновляет информацию о привычке (требует авторизации, можно обновлять только свои привычки)
+      description: Обновляет информацию о привычке. Можно обновлять только свои привычки. ID пользователя извлекается из JWT токена
       operationId: updateHabit
       security:
         - bearerAuth: []
@@ -684,7 +638,7 @@ paths:
       tags:
         - Habits
       summary: Удалить привычку
-      description: Удаляет привычку по её ID (требует авторизации, можно удалять только свои привычки)
+      description: Удаляет привычку по её ID. Можно удалять только свои привычки. ID пользователя извлекается из JWT токена
       operationId: deleteHabit
       security:
         - bearerAuth: []

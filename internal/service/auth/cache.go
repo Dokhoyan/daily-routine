@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// TokenCache определяет интерфейс для кэширования blacklist токенов
 type TokenCache interface {
 	IsBlacklisted(ctx context.Context, tokenHash string) bool
 	AddToBlacklist(ctx context.Context, tokenHash string, ttl time.Duration)

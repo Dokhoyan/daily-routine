@@ -2,7 +2,6 @@ package user
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/Dokhoyan/daily-routine/internal/service"
 )
@@ -21,26 +20,15 @@ func NewImplementation(s UserService) *Implementation {
 
 func (i *Implementation) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users", i.GetAll)
-	mux.HandleFunc("/users/", i.handleUserRoutes)
+	mux.HandleFunc("/user/me", i.handleMeRoutes)
 }
 
-func (i *Implementation) HandleUserRoutes(w http.ResponseWriter, r *http.Request) {
-	i.handleUserRoutes(w, r)
-}
-
-func (i *Implementation) handleUserRoutes(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/users/")
-	path = strings.TrimSuffix(path, "/")
-
-	if path == "" || path == r.URL.Path {
-		i.Get(w, r)
-		return
+func (i *Implementation) handleMeRoutes(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		i.GetMe(w, r)
+	} else if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+		i.UpdateMe(w, r)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-
-	if r.Method == http.MethodPut || r.Method == http.MethodPatch {
-		i.Update(w, r)
-		return
-	}
-
-	i.Get(w, r)
 }

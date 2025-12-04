@@ -7,7 +7,6 @@ import (
 	"github.com/Dokhoyan/daily-routine/internal/models"
 )
 
-// UserRepository определяет методы для доступа к данным пользователей
 type UserRepository interface {
 	GetUserByID(ctx context.Context, id int64) (*models.User, error)
 	CreateUser(ctx context.Context, user *models.User) error
@@ -15,7 +14,6 @@ type UserRepository interface {
 	GetAllUsers(ctx context.Context) ([]*models.User, error)
 }
 
-// HabitRepository определяет методы для доступа к данным привычек
 type HabitRepository interface {
 	GetHabitByID(ctx context.Context, id int64) (*models.Habit, error)
 	GetHabitsByUserID(ctx context.Context, userID int64) ([]*models.Habit, error)
@@ -25,14 +23,12 @@ type HabitRepository interface {
 	DeleteHabitsByUserID(ctx context.Context, userID int64) error
 }
 
-// UserSettingsRepository определяет методы для доступа к данным настроек пользователя
 type UserSettingsRepository interface {
 	GetSettingsByUserID(ctx context.Context, userID int64) (*models.UserSettings, error)
 	CreateSettings(ctx context.Context, settings *models.UserSettings) error
 	UpdateSettings(ctx context.Context, settings *models.UserSettings) error
 }
 
-// TokenRepository определяет методы для доступа к данным токенов
 type TokenRepository interface {
 	SaveRefreshToken(ctx context.Context, token *models.RefreshToken) error
 	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (*models.RefreshToken, error)

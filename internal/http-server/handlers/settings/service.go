@@ -20,33 +20,34 @@ func NewImplementation(s SettingsService) *Implementation {
 }
 
 func (i *Implementation) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/users/", i.handleSettingsRoutes)
+	mux.HandleFunc("/user/me/settings", i.handleMeSettingsRoutes)
+	mux.HandleFunc("/user/me/settings/", i.handleMeSettingsRoutes)
 }
 
-func (i *Implementation) HandleSettingsRoutes(w http.ResponseWriter, r *http.Request) {
-	i.handleSettingsRoutes(w, r)
-}
+func (i *Implementation) handleMeSettingsRoutes(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/user/me/settings")
+	path = strings.TrimSuffix(path, "/")
+	path = strings.TrimPrefix(path, "/")
 
-func (i *Implementation) handleSettingsRoutes(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/users/")
-
-	if strings.HasSuffix(path, "/settings/timezone") {
+	if path == "timezone" {
 		if r.Method == http.MethodPut {
-			i.UpdateTimezone(w, r)
+			i.UpdateTimezoneMe(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 		return
 	}
 
-	if strings.HasSuffix(path, "/settings") {
+	if path == "" {
 		if r.Method == http.MethodGet {
-			i.Get(w, r)
-		} else if r.Method == http.MethodPatch {
-			i.Update(w, r)
+			i.GetMe(w, r)
+		} else if r.Method == http.MethodPatch || r.Method == http.MethodPut {
+			i.UpdateMe(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 		return
 	}
+
+	http.Error(w, "Not found", http.StatusNotFound)
 }

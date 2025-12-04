@@ -11,23 +11,16 @@ import (
 	"github.com/Dokhoyan/daily-routine/internal/models"
 )
 
-func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/users/")
-	path = strings.TrimSuffix(path, "/")
-
-	if path == "" || path == r.URL.Path {
-		response.WriteError(w, http.StatusBadRequest, "User ID is required")
+func (i *Implementation) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	userIDStr, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		response.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	id, err := strconv.ParseInt(path, 10, 64)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		response.WriteError(w, http.StatusBadRequest, "Invalid user ID")
-		return
-	}
-
-	if !middleware.CheckUserOwnership(r, id) {
-		response.WriteError(w, http.StatusForbidden, "You can only update your own profile")
 		return
 	}
 
@@ -41,7 +34,6 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем, что хотя бы одно поле передано
 	if req.Username == "" && req.PhotoURL == "" {
 		response.WriteError(w, http.StatusBadRequest, "At least one field (username or photo_url) must be provided")
 		return
@@ -52,7 +44,7 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 		PhotoURL: req.PhotoURL,
 	}
 
-	if err := i.s.Update(r.Context(), id, user); err != nil {
+	if err := i.s.Update(r.Context(), userID, user); err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			response.WriteError(w, http.StatusNotFound, "User not found")
 			return
@@ -63,3 +55,4 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteSuccess(w, http.StatusOK, "User updated successfully")
 }
+

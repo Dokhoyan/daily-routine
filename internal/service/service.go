@@ -7,14 +7,12 @@ import (
 	"github.com/Dokhoyan/daily-routine/internal/models"
 )
 
-// UserService определяет методы бизнес-логики для управления пользователями
 type UserService interface {
 	GetByID(ctx context.Context, id int64) (*models.User, error)
 	GetAll(ctx context.Context) ([]*models.User, error)
 	Update(ctx context.Context, id int64, user *models.User) error
 }
 
-// HabitService определяет методы бизнес-логики для управления привычками
 type HabitService interface {
 	GetByID(ctx context.Context, id int64) (*models.Habit, error)
 	GetByUserID(ctx context.Context, userID int64) ([]*models.Habit, error)
@@ -24,14 +22,12 @@ type HabitService interface {
 	ProcessDailyReset(ctx context.Context, userID int64, habits []*models.Habit) error
 }
 
-// SettingsService определяет методы бизнес-логики для управления настройками пользователя
 type SettingsService interface {
 	GetByUserID(ctx context.Context, userID int64) (*models.UserSettings, error)
 	UpdateSettings(ctx context.Context, userID int64, doNotDisturb *bool, notifyTimes *[]string) (*models.UserSettings, error)
 	UpdateTimezone(ctx context.Context, userID int64, timezone string) (*models.UserSettings, error)
 }
 
-// AuthService определяет методы бизнес-логики для аутентификации
 type AuthService interface {
 	VerifyTelegramData(data map[string]string) bool
 	GenerateTokenPair(ctx context.Context, userID string, r *http.Request) (*models.TokenPair, error)

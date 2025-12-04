@@ -10,25 +10,16 @@ import (
 	"github.com/Dokhoyan/daily-routine/internal/http-server/response"
 )
 
-func (i *Implementation) UpdateTimezone(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/users/")
-	path = strings.TrimSuffix(path, "/settings/timezone")
-
-	if path == "" || path == r.URL.Path {
-		response.WriteError(w, http.StatusBadRequest, "User ID is required")
+func (i *Implementation) UpdateTimezoneMe(w http.ResponseWriter, r *http.Request) {
+	userIDStr, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		response.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	path = strings.TrimSuffix(path, "/")
-
-	id, err := strconv.ParseInt(path, 10, 64)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		response.WriteError(w, http.StatusBadRequest, "Invalid user ID")
-		return
-	}
-
-	if !middleware.CheckUserOwnership(r, id) {
-		response.WriteError(w, http.StatusForbidden, "You can only update your own settings")
 		return
 	}
 
@@ -46,7 +37,7 @@ func (i *Implementation) UpdateTimezone(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updatedSettings, err := i.s.UpdateTimezone(r.Context(), id, req.Timezone)
+	updatedSettings, err := i.s.UpdateTimezone(r.Context(), userID, req.Timezone)
 	if err != nil {
 		if strings.Contains(err.Error(), "timezone validation failed") || strings.Contains(err.Error(), "invalid timezone") {
 			response.WriteError(w, http.StatusBadRequest, err.Error())
@@ -58,3 +49,4 @@ func (i *Implementation) UpdateTimezone(w http.ResponseWriter, r *http.Request) 
 
 	response.WriteJSON(w, http.StatusOK, updatedSettings)
 }
+

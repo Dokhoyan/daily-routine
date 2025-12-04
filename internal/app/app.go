@@ -5,7 +5,6 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Dokhoyan/daily-routine/internal/config"
@@ -59,10 +58,8 @@ func (a *App) Run(ctx context.Context) error {
 		}
 	}()
 
-	// Запускаем периодическую очистку истекших токенов
 	go a.startTokenCleanup(ctx)
 
-	// Запускаем ежедневный сброс привычек
 	go a.startHabitDailyReset(ctx)
 
 	select {
@@ -132,7 +129,6 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	corsMiddleware := a.serviceProvider.CORSMiddleware()
 	authMiddleware := middleware.AuthMiddleware(a.serviceProvider.AuthService(ctx))
 
-	// Public routes
 	publicMux := http.NewServeMux()
 	authImpl.RegisterRoutes(publicMux)
 	publicMux.HandleFunc("/users", userImpl.GetAll)
@@ -152,18 +148,12 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	protectedMux := http.NewServeMux()
 	settingsImpl.RegisterRoutes(protectedMux)
 	habitImpl.RegisterRoutes(protectedMux)
+	userImpl.RegisterRoutes(protectedMux)
 
 	protectedHandler := corsMiddleware(authMiddleware(protectedMux))
 
-	usersHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		if strings.Contains(path, "/settings") {
-			settingsImpl.HandleSettingsRoutes(w, r)
-			return
-		}
-		userImpl.HandleUserRoutes(w, r)
-	})
-	mux.Handle("/users/", corsMiddleware(authMiddleware(usersHandler)))
+	mux.Handle("/user/me", protectedHandler)
+	mux.Handle("/user/me/", protectedHandler)
 	mux.Handle("/habits", protectedHandler)
 	mux.Handle("/habits/", protectedHandler)
 
@@ -174,10 +164,9 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		log.Println("⚠️  Test mode enabled: /auth/test/token endpoint is available")
 	}
 
-	// Обертка для поддержки префикса /api
 	rootMux := http.NewServeMux()
 	rootMux.Handle("/api/", http.StripPrefix("/api", mux))
-	rootMux.Handle("/", mux) // Поддержка роутов без префикса для обратной совместимости
+	rootMux.Handle("/", mux)
 
 	httpConfig := a.serviceProvider.HTTPConfig()
 	a.httpServer = &http.Server{
@@ -200,10 +189,9 @@ func (a *App) runHTTPServer() error {
 }
 
 func (a *App) startTokenCleanup(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Hour) // Очистка каждый час
+	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
-	// Выполняем очистку сразу при старте
 	a.cleanupExpiredTokens(ctx)
 
 	for {
