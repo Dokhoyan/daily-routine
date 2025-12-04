@@ -2,35 +2,32 @@ volumes:
   postgres_volume:
 
 services:
-  pg:
-    image: postgres:14-alpine3.17
-    container_name: daily-routine-postgres
-    environment:
-      - "POSTGRES_DB=${PG_DATABASE_NAME:-daily_routine}"
-      - "POSTGRES_USER=${PG_USER:-postgres}"
-      - "POSTGRES_PASSWORD=${PG_PASSWORD:-postgres}"
-    ports:
-      - "${PG_PORT:-5432}:5432"
-    volumes:
-      - postgres_volume:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-daily_routine}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  # pg:
+  #   image: postgres:14-alpine3.17
+  #   container_name: daily-routine-postgres
+  #   environment:
+  #     - "POSTGRES_DB=${PG_DATABASE_NAME:-daily_routine}"
+  #     - "POSTGRES_USER=${PG_USER:-postgres}"
+  #     - "POSTGRES_PASSWORD=${PG_PASSWORD:-postgres}"
+  #   ports:
+  #     - "${PG_PORT:-5432}:5432"
+  #   volumes:
+  #     - postgres_volume:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-daily_routine}"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
 
   migrator:
     build:
       context: .
       dockerfile: "config/migration.Dockerfile"
     container_name: daily-routine-migrator
-    depends_on:
-      pg:
-        condition: service_healthy
     environment:
       - "PG_DATABASE_NAME=${PG_DATABASE_NAME:-daily_routine}"
-      - "PG_USER=${PG_USER:-postgres}"
-      - "PG_PASSWORD=${PG_PASSWORD:-postgres}"
+      - "PG_USER=${PG_USER:-root}"
+      - "PG_PASSWORD=${PG_PASSWORD:-123456}"
       - "MIGRATION_DIR=${MIGRATION_DIR:-migrations}"
     restart: on-failure
   # app:

@@ -20,6 +20,29 @@ local-migration-up:
 local-migration-down:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} down -v
 
+# Production migration commands using PG_DSN from .env (for internal connections)
+prod-migration-status:
+	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PG_DSN} status -v
+
+prod-migration-up:
+	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PG_DSN} up -v
+
+prod-migration-down:
+	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PG_DSN} down -v
+
+# Production migration commands for external connections (from local machine)
+# Uses external IP address for connecting from outside the cluster
+PROD_EXTERNAL_DSN="host=89.111.163.253 port=5432 dbname=$(PG_DATABASE_NAME) user=$(PG_USER) password=$(PG_PASSWORD) sslmode=disable"
+
+prod-migration-status-external:
+	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PROD_EXTERNAL_DSN} status -v
+
+prod-migration-up-external:
+	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PROD_EXTERNAL_DSN} up -v
+
+prod-migration-down-external:
+	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PROD_EXTERNAL_DSN} down -v
+
 make-migrate:
 	bin/goose -dir ./migrations create $(name) sql
 

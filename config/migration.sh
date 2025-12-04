@@ -5,7 +5,7 @@ PG_USER=${PG_USER:-root}
 PG_PASSWORD=${PG_PASSWORD:-123456}
 MIGRATION_DIR=${MIGRATION_DIR:-migrations}
 
-export MIGRATION_DSN="host=pg port=5432 dbname=${PG_DATABASE_NAME} user=${PG_USER} password=${PG_PASSWORD} sslmode=disable"
+export MIGRATION_DSN="host=dailyroutine-pg-8m9bvb port=5432 dbname=${PG_DATABASE_NAME} user=${PG_USER} password=${PG_PASSWORD} sslmode=disable"
 
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do
