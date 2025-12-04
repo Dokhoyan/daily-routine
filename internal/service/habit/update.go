@@ -13,11 +13,15 @@ func (s *serv) Update(ctx context.Context, habit *models.Habit) error {
 		return errors.New("title cannot be empty")
 	}
 
-	if habit.Type != models.HabitTypeTime && habit.Type != models.HabitTypeCount {
-		return errors.New("invalid habit type: must be 'time' or 'count'")
+	if habit.Type != models.HabitTypeTime && habit.Type != models.HabitTypeCount && habit.Type != models.HabitTypeBinary {
+		return errors.New("invalid habit type: must be 'time', 'count' or 'binary'")
 	}
 
-	if habit.Value <= 0 {
+	if habit.Type == models.HabitTypeBinary {
+		if habit.Value != 0 && habit.Value != 1 {
+			return errors.New("for binary type, value must be 0 or 1")
+		}
+	} else if habit.Value <= 0 {
 		return errors.New("value must be greater than 0")
 	}
 

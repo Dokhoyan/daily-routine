@@ -472,8 +472,8 @@ paths:
                   description: Название привычки
                 type:
                   type: string
-                  enum: [time, count]
-                  description: Тип привычки (time - по времени, count - по количеству)
+                  enum: [time, count, binary]
+                  description: Тип привычки (time - по времени, count - по количеству, binary - бинарная)
                 unit:
                   type: string
                   description: Единица измерения (например, "минуты", "страницы", "литры")
@@ -586,8 +586,8 @@ paths:
                   description: Название привычки
                 type:
                   type: string
-                  enum: [time, count]
-                  description: Тип привычки
+                  enum: [time, count, binary]
+                  description: Тип привычки (time - по времени, count - по количеству, binary - бинарная)
                 unit:
                   type: string
                   description: Единица измерения
@@ -780,8 +780,8 @@ components:
           description: Название привычки
         type:
           type: string
-          enum: [time, count]
-          description: Тип привычки (time - по времени, count - по количеству)
+          enum: [time, count, binary]
+          description: Тип привычки (time - по времени, count - по количеству, binary - бинарная)
         unit:
           type: string
           description: Единица измерения (опционально)

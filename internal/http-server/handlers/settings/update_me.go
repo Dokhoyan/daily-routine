@@ -46,3 +46,4 @@ func (i *Implementation) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, updatedSettings)
 }
 
+

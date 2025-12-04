@@ -5,8 +5,9 @@ import "time"
 type HabitType string
 
 const (
-	HabitTypeTime  HabitType = "time"
-	HabitTypeCount HabitType = "count"
+	HabitTypeTime   HabitType = "time"
+	HabitTypeCount  HabitType = "count"
+	HabitTypeBinary HabitType = "binary"
 )
 
 type Habit struct {

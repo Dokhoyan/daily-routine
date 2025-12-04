@@ -30,3 +30,4 @@ func (i *Implementation) GetMe(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, user)
 }
 
+

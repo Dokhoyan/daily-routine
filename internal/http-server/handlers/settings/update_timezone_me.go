@@ -50,3 +50,4 @@ func (i *Implementation) UpdateTimezoneMe(w http.ResponseWriter, r *http.Request
 	response.WriteJSON(w, http.StatusOK, updatedSettings)
 }
 
+

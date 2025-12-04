@@ -15,7 +15,7 @@ CREATE TABLE user_settings (
     notify_times    TEXT[] DEFAULT '{}'
 );
 
-CREATE TYPE habit_type AS ENUM ('time', 'count');
+CREATE TYPE habit_type AS ENUM ('time', 'count', 'binary');
 
 CREATE TABLE habits (
     id              BIGSERIAL PRIMARY KEY,
