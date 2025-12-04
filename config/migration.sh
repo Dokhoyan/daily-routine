@@ -1,8 +1,8 @@
 #!/bin/bash
 
-PG_DATABASE_NAME=${PG_DATABASE_NAME:-daily_routine}
-PG_USER=${PG_USER:-postgres}
-PG_PASSWORD=${PG_PASSWORD:-postgres}
+PG_DATABASE_NAME=${PG_DATABASE_NAME:-Daily-routine-postgres}
+PG_USER=${PG_USER:-root}
+PG_PASSWORD=${PG_PASSWORD:-123456}
 MIGRATION_DIR=${MIGRATION_DIR:-migrations}
 
 export MIGRATION_DSN="host=pg port=5432 dbname=${PG_DATABASE_NAME} user=${PG_USER} password=${PG_PASSWORD} sslmode=disable"
