@@ -49,7 +49,7 @@ func (s *serv) RefreshTokenPair(ctx context.Context, refreshToken string, r *htt
 
 	s.logTokenAction(ctx, userIDInt, "refresh", "revoked", r)
 
-	tokenPair, err := s.GenerateTokenPair(ctx, claims.UserID, r)
+	tokenPair, err := s.generateTokenPairWithSessionCheck(ctx, claims.UserID, r, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}

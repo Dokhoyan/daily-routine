@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	accessTokenTTL  = 30 * time.Second // Временно уменьшено для тестирования
+	accessTokenTTL  = 30 * time.Second
 	refreshTokenTTL = 7 * 24 * time.Hour
 )
 
@@ -18,7 +18,7 @@ func (s *serv) generateAccessToken(userID string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 		},
 		UserID: userID,
-		Type:   "access",
+		Type: "access",
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecret))

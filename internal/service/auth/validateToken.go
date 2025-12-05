@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,6 +30,9 @@ func (s *serv) ValidateToken(ctx context.Context, tokenString string) (*models.U
 	})
 
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, fmt.Errorf("token expired")
+		}
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
@@ -39,6 +43,12 @@ func (s *serv) ValidateToken(ctx context.Context, tokenString string) (*models.U
 	claims, ok := token.Claims.(*models.UserClaims)
 	if !ok {
 		return nil, fmt.Errorf("failed to extract claims")
+	}
+
+	if claims.ExpiresAt != nil {
+		if time.Now().After(claims.ExpiresAt.Time) {
+			return nil, fmt.Errorf("token expired at %v", claims.ExpiresAt.Time)
+		}
 	}
 
 	isBlacklisted, err := s.tokenRepo.IsTokenBlacklisted(ctx, tokenHash)

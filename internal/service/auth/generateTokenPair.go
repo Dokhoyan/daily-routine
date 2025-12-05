@@ -12,6 +12,10 @@ import (
 )
 
 func (s *serv) GenerateTokenPair(ctx context.Context, userID string, r *http.Request) (*models.TokenPair, error) {
+	return s.generateTokenPairWithSessionCheck(ctx, userID, r, true)
+}
+
+func (s *serv) generateTokenPairWithSessionCheck(ctx context.Context, userID string, r *http.Request, checkSessions bool) (*models.TokenPair, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -31,20 +35,22 @@ func (s *serv) GenerateTokenPair(ctx context.Context, userID string, r *http.Req
 		return nil, fmt.Errorf("invalid user_id format: %w", err)
 	}
 
-	activeCount, err := s.tokenRepo.GetActiveTokensCount(ctx, userIDInt)
-	if err != nil {
-		fmt.Printf("warning: failed to get active tokens count: %v\n", err)
-	}
+	if checkSessions {
+		activeCount, err := s.tokenRepo.GetActiveTokensCount(ctx, userIDInt)
+		if err != nil {
+			fmt.Printf("warning: failed to get active tokens count: %v\n", err)
+		}
 
-	maxSessions := s.authConfig.GetMaxActiveSessions()
+		maxSessions := s.authConfig.GetMaxActiveSessions()
 
-	if activeCount >= maxSessions {
-		activeTokens, err := s.tokenRepo.GetActiveTokens(ctx, userIDInt)
-		if err == nil && len(activeTokens) > 0 {
-			tokensToRevoke := len(activeTokens) - maxSessions + 1
-			for i := 0; i < tokensToRevoke && i < len(activeTokens); i++ {
-				if err := s.tokenRepo.RevokeRefreshToken(ctx, activeTokens[i].Token); err != nil {
-					fmt.Printf("warning: failed to revoke old token: %v\n", err)
+		if activeCount >= maxSessions {
+			activeTokens, err := s.tokenRepo.GetActiveTokens(ctx, userIDInt)
+			if err == nil && len(activeTokens) > 0 {
+				tokensToRevoke := len(activeTokens) - maxSessions + 1
+				for i := 0; i < tokensToRevoke && i < len(activeTokens); i++ {
+					if err := s.tokenRepo.RevokeRefreshToken(ctx, activeTokens[i].Token); err != nil {
+						fmt.Printf("warning: failed to revoke old token: %v\n", err)
+					}
 				}
 			}
 		}

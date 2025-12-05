@@ -36,7 +36,12 @@ func AuthMiddleware(authService service.AuthService) func(http.Handler) http.Han
 
 			claims, err := authService.ValidateToken(r.Context(), tokenString)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Invalid token: %v", err), http.StatusUnauthorized)
+				errorMsg := err.Error()
+				if strings.Contains(errorMsg, "token expired") {
+					http.Error(w, "Token expired", http.StatusUnauthorized)
+				} else {
+					http.Error(w, fmt.Sprintf("Invalid token: %v", err), http.StatusUnauthorized)
+				}
 				return
 			}
 
