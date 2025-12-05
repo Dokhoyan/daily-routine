@@ -205,15 +205,54 @@ func (s *serviceProvider) CORSMiddleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 			allowedOrigin := s.CORSConfig().GetAllowedOrigin()
+			testModeEnabled := s.TestConfig().IsTestModeEnabled()
 
-			if allowedOrigin != "" && origin == allowedOrigin {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Set("Vary", "Origin")
+			// Функция для установки CORS заголовков
+			setCORSHeaders := func(allowedOriginValue string) {
+				w.Header().Set("Access-Control-Allow-Origin", allowedOriginValue)
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				w.Header().Set("Vary", "Origin")
 			}
 
+			// Проверяем, разрешен ли origin
+			shouldAllow := false
+			originToAllow := ""
+
+			// В тестовом режиме разрешаем два origin
+			if testModeEnabled && origin != "" {
+				if origin == "https://daily-routine.ru" || origin == "http://localhost:3000" {
+					shouldAllow = true
+					originToAllow = origin
+				}
+			}
+
+			// Если не разрешен в тестовом режиме, проверяем обычную конфигурацию
+			if !shouldAllow {
+				if allowedOrigin == "*" {
+					shouldAllow = true
+					if origin != "" {
+						originToAllow = origin
+					} else {
+						originToAllow = "*"
+					}
+				} else if allowedOrigin != "" && origin == allowedOrigin {
+					shouldAllow = true
+					originToAllow = origin
+				} else if allowedOrigin == "" && origin != "" {
+					// Для разработки: если ALLOWED_ORIGIN не установлен, разрешаем любой origin
+					shouldAllow = true
+					originToAllow = origin
+				}
+			}
+
+			// Устанавливаем заголовки, если origin разрешен
+			if shouldAllow && originToAllow != "" {
+				setCORSHeaders(originToAllow)
+			}
+
+			// Обработка preflight запроса
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusOK)
 				return
