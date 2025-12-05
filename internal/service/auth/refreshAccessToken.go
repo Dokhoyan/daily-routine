@@ -32,9 +32,13 @@ func (s *serv) RefreshAccessToken(ctx context.Context, refreshToken string) (str
 	}
 
 	tokenHash := postgres.HashToken(refreshToken)
-	_, err = s.tokenRepo.GetRefreshTokenByHash(ctx, tokenHash)
+	dbToken, err := s.tokenRepo.GetRefreshTokenByHash(ctx, tokenHash)
 	if err != nil {
 		return "", fmt.Errorf("refresh token not found or revoked: %w", err)
+	}
+
+	if dbToken.UserID != userIDInt {
+		return "", fmt.Errorf("token does not belong to user")
 	}
 
 	accessToken, err := s.generateAccessToken(claims.UserID)

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Dokhoyan/daily-routine/internal/http-server/response"
+	"github.com/Dokhoyan/daily-routine/internal/models"
 )
 
 func (i *Implementation) GetAccessToken(w http.ResponseWriter, r *http.Request) {
@@ -28,9 +29,12 @@ func (i *Implementation) GetAccessToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, map[string]string{
-		"access_token": accessToken,
-	})
+	tokenPair := &models.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: req.RefreshToken,
+	}
+
+	response.WriteJSON(w, http.StatusOK, tokenPair)
 }
 
 func (i *Implementation) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
