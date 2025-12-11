@@ -43,20 +43,32 @@ func (s *serv) AuthenticateOrRegister(ctx context.Context, telegramData map[stri
 		}
 
 		user = &models.User{
-			ID:       userID,
-			Username: telegramData["username"],
-			PhotoURL: telegramData["photo_url"],
-			AuthDate: authDate,
-			TokenTG:  "",
+			ID:        userID,
+			Username:  telegramData["username"],
+			FirstName: telegramData["first_name"],
+			PhotoURL:  telegramData["photo_url"],
+			AuthDate:  authDate,
+			TokenTG:   "",
 		}
 
 		if err := s.userRepo.CreateUser(ctx, user); err != nil {
 			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 	} else {
-		if user.Username != telegramData["username"] || user.PhotoURL != telegramData["photo_url"] {
+		needsUpdate := false
+		if user.Username == "" && telegramData["username"] != "" {
 			user.Username = telegramData["username"]
+			needsUpdate = true
+		}
+		if user.FirstName == "" && telegramData["first_name"] != "" {
+			user.FirstName = telegramData["first_name"]
+			needsUpdate = true
+		}
+		if user.PhotoURL == "" && telegramData["photo_url"] != "" {
 			user.PhotoURL = telegramData["photo_url"]
+			needsUpdate = true
+		}
+		if needsUpdate {
 			user.AuthDate = authDate
 			if err := s.userRepo.UpdateUser(ctx, user); err != nil {
 				return nil, fmt.Errorf("failed to update user: %w", err)

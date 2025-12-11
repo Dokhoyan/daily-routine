@@ -54,14 +54,14 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Title        *string           `json:"title,omitempty"`
-		Type         *models.HabitType `json:"type,omitempty"`
-		Unit         *string           `json:"unit,omitempty"`
-		Value        *int              `json:"value,omitempty"`
-		IsActive     *bool             `json:"is_active,omitempty"`
-		IsDone       *bool             `json:"is_done,omitempty"`
-		IsBeneficial *bool             `json:"is_beneficial,omitempty"`
-		Series       *int              `json:"series,omitempty"`
+		Title    *string             `json:"title,omitempty"`
+		Format   *models.HabitFormat `json:"format,omitempty"`
+		Unit     *string             `json:"unit,omitempty"`
+		Value    *int                `json:"value,omitempty"`
+		IsActive *bool               `json:"is_active,omitempty"`
+		IsDone   *bool               `json:"is_done,omitempty"`
+		Type     *models.HabitType   `json:"type,omitempty"`
+		Series   *int                `json:"series,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -72,8 +72,8 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 	if req.Title != nil {
 		currentHabit.Title = *req.Title
 	}
-	if req.Type != nil {
-		currentHabit.Type = *req.Type
+	if req.Format != nil {
+		currentHabit.Format = *req.Format
 	}
 	if req.Unit != nil {
 		currentHabit.Unit = *req.Unit
@@ -89,16 +89,22 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 		newDone := *req.IsDone
 		currentHabit.IsDone = newDone
 
-		if !wasDone && newDone {
-			currentHabit.Series++
-		} else if wasDone && !newDone {
-			if currentHabit.Series > 0 {
-				currentHabit.Series--
+		if currentHabit.Type == models.HabitTypeHarmful {
+			if wasDone && !newDone {
+				currentHabit.Series = 0
+			}
+		} else {
+			if !wasDone && newDone {
+				currentHabit.Series++
+			} else if wasDone && !newDone {
+				if currentHabit.Series > 0 {
+					currentHabit.Series--
+				}
 			}
 		}
 	}
-	if req.IsBeneficial != nil {
-		currentHabit.IsBeneficial = *req.IsBeneficial
+	if req.Type != nil {
+		currentHabit.Type = *req.Type
 	}
 	if req.Series != nil {
 		currentHabit.Series = *req.Series

@@ -3,11 +3,12 @@ package models
 import "time"
 
 type User struct {
-	ID       int64     `json:"id"`
-	Username string    `json:"username"`
-	PhotoURL string    `json:"photo_url"`
-	AuthDate time.Time `json:"auth_date"`
-	TokenTG  string    `json:"tokentg"`
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	FirstName string    `json:"first_name"`
+	PhotoURL  string    `json:"photo_url"`
+	AuthDate  time.Time `json:"auth_date"`
+	TokenTG   string    `json:"tokentg"`
 }
 
 type TokenPair struct {

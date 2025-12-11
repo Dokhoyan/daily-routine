@@ -25,8 +25,9 @@ func (i *Implementation) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Username string `json:"username"`
-		PhotoURL string `json:"photo_url"`
+		Username  string `json:"username"`
+		FirstName string `json:"first_name"`
+		PhotoURL  string `json:"photo_url"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -34,14 +35,15 @@ func (i *Implementation) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Username == "" && req.PhotoURL == "" {
-		response.WriteError(w, http.StatusBadRequest, "At least one field (username or photo_url) must be provided")
+	if req.Username == "" && req.FirstName == "" && req.PhotoURL == "" {
+		response.WriteError(w, http.StatusBadRequest, "At least one field (username, first_name or photo_url) must be provided")
 		return
 	}
 
 	user := &models.User{
-		Username: req.Username,
-		PhotoURL: req.PhotoURL,
+		Username:  req.Username,
+		FirstName: req.FirstName,
+		PhotoURL:  req.PhotoURL,
 	}
 
 	if err := i.s.Update(r.Context(), userID, user); err != nil {

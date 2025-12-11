@@ -21,6 +21,9 @@ func (s *serv) Update(ctx context.Context, id int64, user *models.User) error {
 	if user.Username != "" {
 		currentUser.Username = user.Username
 	}
+	if user.FirstName != "" {
+		currentUser.FirstName = user.FirstName
+	}
 	if user.PhotoURL != "" {
 		currentUser.PhotoURL = user.PhotoURL
 	}

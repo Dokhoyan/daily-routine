@@ -11,7 +11,7 @@ import (
 )
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	builder := sq.Select("id", "username", "photo_url", "auth_date", "tokentg").
+	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date", "tokentg").
 		PlaceholderFormat(sq.Dollar).
 		From("users").
 		Where(sq.Eq{"id": id})
@@ -27,6 +27,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 	err = r.db.QueryRowContext(ctx, query, args...).Scan(
 		&user.ID,
 		&user.Username,
+		&user.FirstName,
 		&user.PhotoURL,
 		&authDate,
 		&user.TokenTG,
@@ -49,8 +50,8 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 func (r *Repository) CreateUser(ctx context.Context, user *models.User) error {
 	builder := sq.Insert("users").
 		PlaceholderFormat(sq.Dollar).
-		Columns("id", "username", "photo_url", "auth_date", "tokentg").
-		Values(user.ID, user.Username, user.PhotoURL, user.AuthDate, user.TokenTG)
+		Columns("id", "username", "first_name", "photo_url", "auth_date", "tokentg").
+		Values(user.ID, user.Username, user.FirstName, user.PhotoURL, user.AuthDate, user.TokenTG)
 
 	query, args, err := builder.ToSql()
 	if err != nil {
@@ -69,6 +70,7 @@ func (r *Repository) UpdateUser(ctx context.Context, user *models.User) error {
 	builder := sq.Update("users").
 		PlaceholderFormat(sq.Dollar).
 		Set("username", user.Username).
+		Set("first_name", user.FirstName).
 		Set("photo_url", user.PhotoURL).
 		Set("auth_date", user.AuthDate).
 		Set("tokentg", user.TokenTG).
@@ -97,7 +99,7 @@ func (r *Repository) UpdateUser(ctx context.Context, user *models.User) error {
 }
 
 func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
-	builder := sq.Select("id", "username", "photo_url", "auth_date", "tokentg").
+	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date", "tokentg").
 		PlaceholderFormat(sq.Dollar).
 		From("users").
 		OrderBy("id")
@@ -121,6 +123,7 @@ func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 		err := rows.Scan(
 			&user.ID,
 			&user.Username,
+			&user.FirstName,
 			&user.PhotoURL,
 			&authDate,
 			&user.TokenTG,

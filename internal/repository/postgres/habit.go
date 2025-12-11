@@ -11,7 +11,7 @@ import (
 )
 
 func (r *Repository) GetHabitByID(ctx context.Context, id int64) (*models.Habit, error) {
-	builder := sq.Select("id", "user_id", "title", "type", "unit", "value", "is_active", "is_done", "is_beneficial", "series", "created_at").
+	builder := sq.Select("id", "user_id", "title", "format", "unit", "value", "is_active", "is_done", "type", "series", "created_at").
 		PlaceholderFormat(sq.Dollar).
 		From("habits").
 		Where(sq.Eq{"id": id})
@@ -22,18 +22,19 @@ func (r *Repository) GetHabitByID(ctx context.Context, id int64) (*models.Habit,
 	}
 
 	habit := &models.Habit{}
+	var habitFormat string
 	var habitType string
 
 	err = r.db.QueryRowContext(ctx, query, args...).Scan(
 		&habit.ID,
 		&habit.UserID,
 		&habit.Title,
-		&habitType,
+		&habitFormat,
 		&habit.Unit,
 		&habit.Value,
 		&habit.IsActive,
 		&habit.IsDone,
-		&habit.IsBeneficial,
+		&habitType,
 		&habit.Series,
 		&habit.CreatedAt,
 	)
@@ -45,12 +46,13 @@ func (r *Repository) GetHabitByID(ctx context.Context, id int64) (*models.Habit,
 		return nil, fmt.Errorf("failed to get habit by id: %w", err)
 	}
 
+	habit.Format = models.HabitFormat(habitFormat)
 	habit.Type = models.HabitType(habitType)
 	return habit, nil
 }
 
 func (r *Repository) GetHabitsByUserID(ctx context.Context, userID int64) ([]*models.Habit, error) {
-	builder := sq.Select("id", "user_id", "title", "type", "unit", "value", "is_active", "is_done", "is_beneficial", "series", "created_at").
+	builder := sq.Select("id", "user_id", "title", "format", "unit", "value", "is_active", "is_done", "type", "series", "created_at").
 		PlaceholderFormat(sq.Dollar).
 		From("habits").
 		Where(sq.Eq{"user_id": userID}).
@@ -70,18 +72,19 @@ func (r *Repository) GetHabitsByUserID(ctx context.Context, userID int64) ([]*mo
 	habits := make([]*models.Habit, 0)
 	for rows.Next() {
 		habit := &models.Habit{}
+		var habitFormat string
 		var habitType string
 
 		err := rows.Scan(
 			&habit.ID,
 			&habit.UserID,
 			&habit.Title,
-			&habitType,
+			&habitFormat,
 			&habit.Unit,
 			&habit.Value,
 			&habit.IsActive,
 			&habit.IsDone,
-			&habit.IsBeneficial,
+			&habitType,
 			&habit.Series,
 			&habit.CreatedAt,
 		)
@@ -89,6 +92,7 @@ func (r *Repository) GetHabitsByUserID(ctx context.Context, userID int64) ([]*mo
 			return nil, fmt.Errorf("failed to scan habit: %w", err)
 		}
 
+		habit.Format = models.HabitFormat(habitFormat)
 		habit.Type = models.HabitType(habitType)
 		habits = append(habits, habit)
 	}
@@ -103,8 +107,8 @@ func (r *Repository) GetHabitsByUserID(ctx context.Context, userID int64) ([]*mo
 func (r *Repository) CreateHabit(ctx context.Context, habit *models.Habit) (*models.Habit, error) {
 	builder := sq.Insert("habits").
 		PlaceholderFormat(sq.Dollar).
-		Columns("user_id", "title", "type", "unit", "value", "is_active", "is_done", "is_beneficial", "series").
-		Values(habit.UserID, habit.Title, string(habit.Type), habit.Unit, habit.Value, habit.IsActive, habit.IsDone, habit.IsBeneficial, habit.Series).
+		Columns("user_id", "title", "format", "unit", "value", "is_active", "is_done", "type", "series").
+		Values(habit.UserID, habit.Title, string(habit.Format), habit.Unit, habit.Value, habit.IsActive, habit.IsDone, string(habit.Type), habit.Series).
 		Suffix("RETURNING id, created_at")
 
 	query, args, err := builder.ToSql()
@@ -132,12 +136,12 @@ func (r *Repository) UpdateHabit(ctx context.Context, habit *models.Habit) error
 	builder := sq.Update("habits").
 		PlaceholderFormat(sq.Dollar).
 		Set("title", habit.Title).
-		Set("type", string(habit.Type)).
+		Set("format", string(habit.Format)).
 		Set("unit", habit.Unit).
 		Set("value", habit.Value).
 		Set("is_active", habit.IsActive).
 		Set("is_done", habit.IsDone).
-		Set("is_beneficial", habit.IsBeneficial).
+		Set("type", string(habit.Type)).
 		Set("series", habit.Series).
 		Where(sq.Eq{"id": habit.ID})
 

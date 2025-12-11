@@ -24,12 +24,12 @@ func (i *Implementation) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Title        string           `json:"title"`
-		Type         models.HabitType `json:"type"`
-		Unit         string           `json:"unit"`
-		Value        int              `json:"value"`
-		IsActive     *bool            `json:"is_active,omitempty"`
-		IsBeneficial *bool            `json:"is_beneficial,omitempty"`
+		Title    string                 `json:"title"`
+		Format   models.HabitFormat     `json:"format"`
+		Unit     string                 `json:"unit"`
+		Value    int                    `json:"value"`
+		IsActive *bool                  `json:"is_active,omitempty"`
+		Type     *models.HabitType      `json:"type,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -40,7 +40,7 @@ func (i *Implementation) Create(w http.ResponseWriter, r *http.Request) {
 	habit := &models.Habit{
 		UserID: userID,
 		Title:  req.Title,
-		Type:   req.Type,
+		Format: req.Format,
 		Unit:   req.Unit,
 		Value:  req.Value,
 	}
@@ -51,10 +51,16 @@ func (i *Implementation) Create(w http.ResponseWriter, r *http.Request) {
 		habit.IsActive = true
 	}
 
-	if req.IsBeneficial != nil {
-		habit.IsBeneficial = *req.IsBeneficial
+	if req.Type != nil {
+		habit.Type = *req.Type
 	} else {
-		habit.IsBeneficial = true // По умолчанию полезная привычка
+		habit.Type = models.HabitTypeBeneficial
+	}
+
+	if habit.Type == models.HabitTypeHarmful {
+		habit.IsDone = true
+	} else {
+		habit.IsDone = false
 	}
 
 	createdHabit, err := i.s.Create(r.Context(), habit)

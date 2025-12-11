@@ -13,10 +13,20 @@ func (s *serv) ProcessDailyReset(ctx context.Context, userID int64, habits []*mo
 			continue
 		}
 
-		if habit.IsDone {
-			habit.IsDone = false
+		if habit.Type == models.HabitTypeHarmful {
+			if habit.IsDone {
+				habit.Series++
+				habit.IsDone = true
+			} else {
+				habit.Series = 0
+				habit.IsDone = true
+			}
 		} else {
-			habit.Series = 0
+			if habit.IsDone {
+				habit.IsDone = false
+			} else {
+				habit.Series = 0
+			}
 		}
 
 		if err := s.habitRepo.UpdateHabit(ctx, habit); err != nil {
