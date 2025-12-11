@@ -488,6 +488,9 @@ paths:
                 value:
                   type: integer
                   description: Целевое значение (минуты или количество)
+                current_value:
+                  type: integer
+                  description: Текущее значение выполнения (не может быть больше value, по умолчанию 0)
                 is_active:
                   type: boolean
                   description: Активна ли привычка (по умолчанию true)
@@ -500,6 +503,7 @@ paths:
               format: "count"
               unit: "страницы"
               value: 50
+              current_value: 0
               is_active: true
               type: "beneficial"
       responses:
@@ -517,10 +521,24 @@ paths:
       tags:
         - Habits
       summary: Получить все привычки текущего пользователя
-      description: Возвращает список всех привычек текущего авторизованного пользователя. ID пользователя извлекается из JWT токена
+      description: Возвращает список всех привычек текущего авторизованного пользователя. ID пользователя извлекается из JWT токена. Поддерживает фильтрацию по типу (type) и активности (is_active) через query параметры.
       operationId: getAllHabits
       security:
         - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Фильтр по типу привычки (beneficial или harmful)
+          required: false
+          schema:
+            type: string
+            enum: [beneficial, harmful]
+        - name: is_active
+          in: query
+          description: Фильтр по активности привычки (true или false)
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: Успешное получение списка привычек
@@ -603,6 +621,9 @@ paths:
                 value:
                   type: integer
                   description: Целевое значение
+                current_value:
+                  type: integer
+                  description: Текущее значение выполнения (не может быть больше value)
                 is_active:
                   type: boolean
                   description: Активна ли привычка
@@ -621,6 +642,7 @@ paths:
               format: "count"
               unit: "страницы"
               value: 50
+              current_value: 25
               is_active: true
               is_done: false
               type: "beneficial"
@@ -803,6 +825,10 @@ components:
         value:
           type: integer
           description: Целевое значение (минуты или количество)
+        current_value:
+          type: integer
+          description: Текущее значение выполнения (не может быть больше value)
+          default: 0
         is_active:
           type: boolean
           description: Активна ли привычка
@@ -831,6 +857,7 @@ components:
         format: "count"
         unit: "страницы"
         value: 50
+        current_value: 25
         is_active: true
         is_done: false
         type: "beneficial"

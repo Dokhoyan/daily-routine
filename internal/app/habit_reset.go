@@ -73,7 +73,7 @@ func (a *App) processHabitDailyReset(ctx context.Context) {
 				continue
 			}
 
-			habits, err := habitService.GetByUserID(ctx, user.ID)
+			habits, err := habitService.GetByUserID(ctx, user.ID, nil, nil)
 			if err != nil {
 				log.Printf("warning: failed to get habits for user %d: %v", user.ID, err)
 				continue

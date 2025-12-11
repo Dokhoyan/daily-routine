@@ -67,7 +67,27 @@ func (i *Implementation) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	habits, err := i.s.GetByUserID(r.Context(), userID)
+	var habitType *string
+	var isActive *bool
+
+	if typeParam := r.URL.Query().Get("type"); typeParam != "" {
+		if typeParam != "beneficial" && typeParam != "harmful" {
+			response.WriteError(w, http.StatusBadRequest, "Invalid type parameter: must be 'beneficial' or 'harmful'")
+			return
+		}
+		habitType = &typeParam
+	}
+
+	if isActiveParam := r.URL.Query().Get("is_active"); isActiveParam != "" {
+		parsed, err := strconv.ParseBool(isActiveParam)
+		if err != nil {
+			response.WriteError(w, http.StatusBadRequest, "Invalid is_active parameter: must be 'true' or 'false'")
+			return
+		}
+		isActive = &parsed
+	}
+
+	habits, err := i.s.GetByUserID(r.Context(), userID, habitType, isActive)
 	if err != nil {
 		response.WriteError(w, http.StatusInternalServerError, "Failed to get habits")
 		return

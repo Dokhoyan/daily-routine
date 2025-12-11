@@ -54,14 +54,15 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Title    *string             `json:"title,omitempty"`
-		Format   *models.HabitFormat `json:"format,omitempty"`
-		Unit     *string             `json:"unit,omitempty"`
-		Value    *int                `json:"value,omitempty"`
-		IsActive *bool               `json:"is_active,omitempty"`
-		IsDone   *bool               `json:"is_done,omitempty"`
-		Type     *models.HabitType   `json:"type,omitempty"`
-		Series   *int                `json:"series,omitempty"`
+		Title        *string             `json:"title,omitempty"`
+		Format       *models.HabitFormat `json:"format,omitempty"`
+		Unit         *string             `json:"unit,omitempty"`
+		Value        *int                `json:"value,omitempty"`
+		CurrentValue *int                `json:"current_value,omitempty"`
+		IsActive     *bool               `json:"is_active,omitempty"`
+		IsDone       *bool               `json:"is_done,omitempty"`
+		Type         *models.HabitType   `json:"type,omitempty"`
+		Series       *int                `json:"series,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -80,6 +81,20 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Value != nil {
 		currentHabit.Value = *req.Value
+		if currentHabit.CurrentValue > currentHabit.Value {
+			currentHabit.CurrentValue = currentHabit.Value
+		}
+	}
+	if req.CurrentValue != nil {
+		if *req.CurrentValue < 0 {
+			response.WriteError(w, http.StatusBadRequest, "current_value cannot be negative")
+			return
+		}
+		if *req.CurrentValue > currentHabit.Value {
+			response.WriteError(w, http.StatusBadRequest, "current_value cannot be greater than value")
+			return
+		}
+		currentHabit.CurrentValue = *req.CurrentValue
 	}
 	if req.IsActive != nil {
 		currentHabit.IsActive = *req.IsActive

@@ -26,6 +26,7 @@ CREATE TABLE habits (
     format          habit_format NOT NULL,
     unit            TEXT,
     value           INTEGER NOT NULL,
+    current_value   INTEGER DEFAULT 0 CHECK (current_value <= value),
     is_active       BOOLEAN DEFAULT TRUE,
     is_done         BOOLEAN DEFAULT FALSE,
     type            habit_type NOT NULL DEFAULT 'beneficial',

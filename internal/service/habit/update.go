@@ -25,6 +25,14 @@ func (s *serv) Update(ctx context.Context, habit *models.Habit) error {
 		return errors.New("value must be greater than 0")
 	}
 
+	if habit.CurrentValue < 0 {
+		return errors.New("current_value cannot be negative")
+	}
+
+	if habit.CurrentValue > habit.Value {
+		return errors.New("current_value cannot be greater than value")
+	}
+
 	if habit.Type != models.HabitTypeBeneficial && habit.Type != models.HabitTypeHarmful {
 		return errors.New("invalid habit type: must be 'beneficial' or 'harmful'")
 	}

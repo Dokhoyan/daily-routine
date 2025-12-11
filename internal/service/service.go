@@ -15,7 +15,7 @@ type UserService interface {
 
 type HabitService interface {
 	GetByID(ctx context.Context, id int64) (*models.Habit, error)
-	GetByUserID(ctx context.Context, userID int64) ([]*models.Habit, error)
+	GetByUserID(ctx context.Context, userID int64, habitType *string, isActive *bool) ([]*models.Habit, error)
 	Create(ctx context.Context, habit *models.Habit) (*models.Habit, error)
 	Update(ctx context.Context, habit *models.Habit) error
 	Delete(ctx context.Context, id int64) error

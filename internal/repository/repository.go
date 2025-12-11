@@ -16,7 +16,7 @@ type UserRepository interface {
 
 type HabitRepository interface {
 	GetHabitByID(ctx context.Context, id int64) (*models.Habit, error)
-	GetHabitsByUserID(ctx context.Context, userID int64) ([]*models.Habit, error)
+	GetHabitsByUserID(ctx context.Context, userID int64, habitType *models.HabitType, isActive *bool) ([]*models.Habit, error)
 	CreateHabit(ctx context.Context, habit *models.Habit) (*models.Habit, error)
 	UpdateHabit(ctx context.Context, habit *models.Habit) error
 	DeleteHabit(ctx context.Context, id int64) error
