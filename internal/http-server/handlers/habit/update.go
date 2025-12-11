@@ -85,7 +85,17 @@ func (i *Implementation) Update(w http.ResponseWriter, r *http.Request) {
 		currentHabit.IsActive = *req.IsActive
 	}
 	if req.IsDone != nil {
-		currentHabit.IsDone = *req.IsDone
+		wasDone := currentHabit.IsDone
+		newDone := *req.IsDone
+		currentHabit.IsDone = newDone
+
+		if !wasDone && newDone {
+			currentHabit.Series++
+		} else if wasDone && !newDone {
+			if currentHabit.Series > 0 {
+				currentHabit.Series--
+			}
+		}
 	}
 	if req.IsBeneficial != nil {
 		currentHabit.IsBeneficial = *req.IsBeneficial

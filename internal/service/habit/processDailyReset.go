@@ -14,7 +14,6 @@ func (s *serv) ProcessDailyReset(ctx context.Context, userID int64, habits []*mo
 		}
 
 		if habit.IsDone {
-			habit.Series++
 			habit.IsDone = false
 		} else {
 			habit.Series = 0
