@@ -13,6 +13,8 @@ func (s *serv) ProcessDailyReset(ctx context.Context, userID int64, habits []*mo
 			continue
 		}
 
+		habit.CurrentValue = 0
+
 		if habit.Type == models.HabitTypeHarmful {
 			if habit.IsDone {
 				habit.Series++
