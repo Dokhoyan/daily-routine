@@ -37,7 +37,6 @@ type TokenRepository interface {
 	GetActiveTokensCount(ctx context.Context, userID int64) (int, error)
 	GetActiveTokens(ctx context.Context, userID int64) ([]*models.RefreshToken, error)
 	DeleteExpiredTokens(ctx context.Context) error
-	LogTokenAction(ctx context.Context, log *models.TokenLog) error
 	AddToBlacklist(ctx context.Context, tokenHash string, userID int64, expiresAt time.Time, reason *string) error
 	IsTokenBlacklisted(ctx context.Context, tokenHash string) (bool, error)
 	DeleteExpiredBlacklistEntries(ctx context.Context) error

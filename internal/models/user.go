@@ -8,7 +8,6 @@ type User struct {
 	FirstName string    `json:"first_name"`
 	PhotoURL  string    `json:"photo_url"`
 	AuthDate  time.Time `json:"auth_date"`
-	TokenTG   string    `json:"tokentg"`
 }
 
 type TokenPair struct {

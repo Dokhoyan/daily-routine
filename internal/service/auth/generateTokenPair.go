@@ -78,9 +78,6 @@ func (s *serv) generateTokenPairWithSessionCheck(ctx context.Context, userID str
 		return nil, fmt.Errorf("failed to save refresh token: %w", err)
 	}
 
-	s.logTokenAction(ctx, userIDInt, "refresh", "issued", r)
-	s.logTokenAction(ctx, userIDInt, "access", "issued", r)
-
 	return &models.TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

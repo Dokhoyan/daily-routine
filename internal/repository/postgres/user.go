@@ -11,7 +11,7 @@ import (
 )
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date", "tokentg").
+	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date").
 		PlaceholderFormat(sq.Dollar).
 		From("users").
 		Where(sq.Eq{"id": id})
@@ -30,7 +30,6 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 		&user.FirstName,
 		&user.PhotoURL,
 		&authDate,
-		&user.TokenTG,
 	)
 
 	if err != nil {
@@ -50,8 +49,8 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 func (r *Repository) CreateUser(ctx context.Context, user *models.User) error {
 	builder := sq.Insert("users").
 		PlaceholderFormat(sq.Dollar).
-		Columns("id", "username", "first_name", "photo_url", "auth_date", "tokentg").
-		Values(user.ID, user.Username, user.FirstName, user.PhotoURL, user.AuthDate, user.TokenTG)
+		Columns("id", "username", "first_name", "photo_url", "auth_date").
+		Values(user.ID, user.Username, user.FirstName, user.PhotoURL, user.AuthDate)
 
 	query, args, err := builder.ToSql()
 	if err != nil {
@@ -73,7 +72,6 @@ func (r *Repository) UpdateUser(ctx context.Context, user *models.User) error {
 		Set("first_name", user.FirstName).
 		Set("photo_url", user.PhotoURL).
 		Set("auth_date", user.AuthDate).
-		Set("tokentg", user.TokenTG).
 		Where(sq.Eq{"id": user.ID})
 
 	query, args, err := builder.ToSql()
@@ -99,7 +97,7 @@ func (r *Repository) UpdateUser(ctx context.Context, user *models.User) error {
 }
 
 func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
-	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date", "tokentg").
+	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date").
 		PlaceholderFormat(sq.Dollar).
 		From("users").
 		OrderBy("id")
@@ -126,7 +124,6 @@ func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 			&user.FirstName,
 			&user.PhotoURL,
 			&authDate,
-			&user.TokenTG,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)

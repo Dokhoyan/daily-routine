@@ -73,8 +73,6 @@ func (s *serv) RevokeToken(ctx context.Context, tokenString string) error {
 		s.tokenCache.AddToBlacklist(ctx, tokenHash, ttl)
 	}
 
-	s.logTokenAction(ctx, userIDInt, claims.Type, "revoked", nil)
-
 	return nil
 }
 
@@ -103,8 +101,6 @@ func (s *serv) RevokeAllUserTokens(ctx context.Context, userID int64) error {
 			}
 		}
 	}
-
-	s.logTokenAction(ctx, userID, "all", "revoked", nil)
 
 	return nil
 }

@@ -48,7 +48,6 @@ func (s *serv) AuthenticateOrRegister(ctx context.Context, telegramData map[stri
 			FirstName: telegramData["first_name"],
 			PhotoURL:  telegramData["photo_url"],
 			AuthDate:  authDate,
-			TokenTG:   "",
 		}
 
 		if err := s.userRepo.CreateUser(ctx, user); err != nil {

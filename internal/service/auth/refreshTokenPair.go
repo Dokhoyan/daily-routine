@@ -49,13 +49,8 @@ func (s *serv) RefreshTokenPair(ctx context.Context, refreshToken string, r *htt
 	}
 
 	if err := s.tokenRepo.RevokeRefreshToken(ctx, tokenHash); err != nil {
-
 		fmt.Printf("warning: failed to revoke old refresh token: %v\n", err)
-	} else {
-		s.logTokenAction(ctx, userIDInt, "refresh", "revoked", r)
 	}
-
-	s.logTokenAction(ctx, userIDInt, "refresh", "refreshed", r)
 
 	return tokenPair, nil
 }

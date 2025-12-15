@@ -46,7 +46,5 @@ func (s *serv) RefreshAccessToken(ctx context.Context, refreshToken string) (str
 		return "", fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	s.logTokenAction(ctx, userIDInt, "access", "refreshed", nil)
-
 	return accessToken, nil
 }

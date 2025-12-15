@@ -2,22 +2,22 @@ volumes:
   postgres_volume:
 
 services:
-  # pg:
-  #   image: postgres:14-alpine3.17
-  #   container_name: daily-routine-postgres
-  #   environment:
-  #     - "POSTGRES_DB=${PG_DATABASE_NAME:-daily_routine}"
-  #     - "POSTGRES_USER=${PG_USER:-postgres}"
-  #     - "POSTGRES_PASSWORD=${PG_PASSWORD:-postgres}"
-  #   ports:
-  #     - "${PG_PORT:-5432}:5432"
-  #   volumes:
-  #     - postgres_volume:/var/lib/postgresql/data
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-daily_routine}"]
-  #     interval: 5s
-  #     timeout: 5s
-  #     retries: 5
+  pg:
+    image: postgres:14-alpine3.17
+    container_name: daily-routine-postgres
+    environment:
+      - "POSTGRES_DB=${PG_DATABASE_NAME:-daily_routine}"
+      - "POSTGRES_USER=${PG_USER:-postgres}"
+      - "POSTGRES_PASSWORD=${PG_PASSWORD:-postgres}"
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-daily_routine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   migrator:
     build:
@@ -30,26 +30,26 @@ services:
       - "PG_PASSWORD=${PG_PASSWORD:-123456}"
       - "MIGRATION_DIR=${MIGRATION_DIR:-migrations}"
     restart: on-failure
-  # app:
-  #   build:
-  #     dockerfile: config/Dockerfile
-  #     context: .
-  #   container_name: daily-routine-app
-  #   depends_on:
-  #     pg:
-  #       condition: service_healthy
-  #     migrator:
-  #       condition: service_completed_successfully
-  #   ports:
-  #     - "${HTTP_PORT:-8000}:8000"
-  #   environment:
-  #     - "PG_DSN=postgres://${PG_USER:-postgres}:${PG_PASSWORD:-postgres}@pg:5432/${PG_DATABASE_NAME:-daily_routine}?sslmode=disable"
-  #     - "HTTP_HOST=${HTTP_HOST:-0.0.0.0}"
-  #     - "HTTP_PORT=${HTTP_PORT:-8000}"
-  #     - "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}"
-  #     - "JWT_SECRET=${JWT_SECRET:-}"
-  #     - "ALLOWED_ORIGIN=${ALLOWED_ORIGIN:-*}"
-  #     - "ENABLE_TEST_MODE=${ENABLE_TEST_MODE:-true}"
-  #     - "TEST_USER_ID=${TEST_USER_ID:-123456789}"
-  #     - "MAX_ACTIVE_SESSIONS=${MAX_ACTIVE_SESSIONS:-5}"
-  #   restart: on-failure
+  app:
+    build:
+      dockerfile: config/Dockerfile
+      context: .
+    container_name: daily-routine-app
+    depends_on:
+      pg:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    ports:
+      - "${HTTP_PORT:-8000}:8000"
+    environment:
+      - "PG_DSN=postgres://${PG_USER:-postgres}:${PG_PASSWORD:-postgres}@pg:5432/${PG_DATABASE_NAME:-daily_routine}?sslmode=disable"
+      - "HTTP_HOST=${HTTP_HOST:-0.0.0.0}"
+      - "HTTP_PORT=${HTTP_PORT:-8000}"
+      - "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}"
+      - "JWT_SECRET=${JWT_SECRET:-}"
+      - "ALLOWED_ORIGIN=${ALLOWED_ORIGIN:-*}"
+      - "ENABLE_TEST_MODE=${ENABLE_TEST_MODE:-true}"
+      - "TEST_USER_ID=${TEST_USER_ID:-123456789}"
+      - "MAX_ACTIVE_SESSIONS=${MAX_ACTIVE_SESSIONS:-5}"
+    restart: on-failure

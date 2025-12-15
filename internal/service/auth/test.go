@@ -22,7 +22,6 @@ func (s *serv) GenerateTestToken(ctx context.Context, userID int64, r *http.Requ
 			ID:       userID,
 			Username: "test_user_" + strconv.FormatInt(userID, 10),
 			PhotoURL: "",
-			TokenTG:  "",
 			AuthDate: time.Now(),
 		}
 		if err := s.userRepo.CreateUser(ctx, user); err != nil {

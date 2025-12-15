@@ -24,12 +24,13 @@ func (i *Implementation) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Title    string                 `json:"title"`
-		Format   models.HabitFormat     `json:"format"`
-		Unit     string                 `json:"unit"`
-		Value    int                    `json:"value"`
-		IsActive *bool                  `json:"is_active,omitempty"`
-		Type     *models.HabitType      `json:"type,omitempty"`
+		Title        string                 `json:"title"`
+		Format       models.HabitFormat     `json:"format"`
+		Unit         string                 `json:"unit"`
+		Value        int                    `json:"value"`
+		CurrentValue *int                   `json:"current_value,omitempty"`
+		IsActive     *bool                  `json:"is_active,omitempty"`
+		Type         *models.HabitType      `json:"type,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -43,6 +44,12 @@ func (i *Implementation) Create(w http.ResponseWriter, r *http.Request) {
 		Format: req.Format,
 		Unit:   req.Unit,
 		Value:  req.Value,
+	}
+
+	if req.CurrentValue != nil {
+		habit.CurrentValue = *req.CurrentValue
+	} else {
+		habit.CurrentValue = 0
 	}
 
 	if req.IsActive != nil {
@@ -62,6 +69,8 @@ func (i *Implementation) Create(w http.ResponseWriter, r *http.Request) {
 	} else {
 		habit.IsDone = false
 	}
+
+	habit.Series = 0
 
 	createdHabit, err := i.s.Create(r.Context(), habit)
 	if err != nil {

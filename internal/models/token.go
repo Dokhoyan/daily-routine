@@ -13,16 +13,6 @@ type RefreshToken struct {
 	IPAddress  *string    `json:"ip_address,omitempty"`
 }
 
-type TokenLog struct {
-	ID         int64     `json:"id"`
-	UserID     int64     `json:"user_id"`
-	TokenType  string    `json:"token_type"` // "access" or "refresh"
-	Action     string    `json:"action"`     // "issued", "refreshed", "revoked"
-	DeviceInfo *string   `json:"device_info,omitempty"`
-	IPAddress  *string   `json:"ip_address,omitempty"`
-	CreatedAt  time.Time `json:"created_at"`
-}
-
 type TokenBlacklistEntry struct {
 	ID        int64     `json:"id"`
 	TokenHash string    `json:"token_hash"`

@@ -232,25 +232,6 @@ func (r *Repository) DeleteExpiredTokens(ctx context.Context) error {
 	return nil
 }
 
-func (r *Repository) LogTokenAction(ctx context.Context, log *models.TokenLog) error {
-	builder := sq.Insert("token_issuance_log").
-		PlaceholderFormat(sq.Dollar).
-		Columns("user_id", "token_type", "action", "device_info", "ip_address").
-		Values(log.UserID, log.TokenType, log.Action, log.DeviceInfo, log.IPAddress)
-
-	query, args, err := builder.ToSql()
-	if err != nil {
-		return fmt.Errorf("failed to build insert query: %w", err)
-	}
-
-	_, err = r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("failed to log token action: %w", err)
-	}
-
-	return nil
-}
-
 func (r *Repository) AddToBlacklist(ctx context.Context, tokenHash string, userID int64, expiresAt time.Time, reason *string) error {
 	builder := sq.Insert("token_blacklist").
 		PlaceholderFormat(sq.Dollar).
