@@ -2,11 +2,67 @@ openapi: 3.0.3
 info:
   title: Daily Routine API
   description: |
-    API для управления ежедневными привычками и настройками пользователей.
+    API для управления ежедневными привычками, настройками пользователей и системой спринтов.
     
     **Важно:** Все endpoints, работающие с пользовательскими данными, используют ID пользователя из JWT токена.
     Фронтенд не должен передавать user_id в URL или параметрах запроса.
-  version: 2.0.0
+    
+    ## Система спринтов
+    
+    Спринты - это мотивационные задачи, которые пользователи могут выполнять для получения коинов.
+    
+    ### Как работает система спринтов:
+    
+    1. **Автоматическая проверка выполнения:**
+       - Проверка выполняется автоматически каждый день в 00:00 по часовому поясу пользователя
+       - Проверка происходит во время ежедневного сброса привычек
+       - Система проверяет все активные спринты для каждого пользователя
+    
+    2. **Типы спринтов и их логика проверки:**
+       
+       **habit_series (Поддержание серии привычки):**
+       - Проверяет, что серия конкретной привычки (`habit.series`) >= минимальной серии (`min_series`)
+       - Если условие выполнено - счетчик дней увеличивается на 1
+       - Пример: "Поддерживать серию привычки 'Читать книгу' минимум 5 дней подряд в течение 7 дней"
+       
+       **all_habits (Выполнение всех привычек):**
+       - Проверяет, что все активные привычки пользователя имеют `is_done = true`
+       - Если все привычки выполнены - счетчик дней увеличивается на 1
+       - Если хотя бы одна привычка не выполнена - счетчик не изменяется
+       - Пример: "Выполнять все активные привычки 7 дней подряд"
+       
+       **habit_increase (Увеличение значения привычки):**
+       - Проверяет, что текущее значение привычки (`habit.current_value`) >= требуемое увеличение
+       - Требуемое увеличение = `habit.value * percent_increase / 100`
+       - Если условие выполнено - счетчик дней увеличивается на 1
+       - Пример: "Увеличить значение привычки 'Читать книгу' на 20% в течение 3 дней"
+    
+    3. **Отслеживание прогресса:**
+       - Прогресс отслеживается отдельно для каждой недели
+       - Неделя начинается с понедельника 00:00 UTC
+       - Поле `current_days` показывает, сколько дней подряд пользователь выполнял условие спринта в текущей неделе
+       - Каждый день, когда условие выполнено, `current_days` увеличивается на 1
+    
+    4. **Начисление наград:**
+       - Когда `current_days` достигает `target_days`, спринт считается выполненным
+       - Пользователю начисляются коины (`coins_reward`) в поле `user.coins`
+       - Награда начисляется только один раз, даже если спринт выполнен несколько раз
+       - После выполнения спринт помечается как `is_completed = true` и больше не проверяется
+    
+    5. **Еженедельное обнуление:**
+       - Каждый понедельник в 00:00 UTC все прогрессы спринтов обнуляются
+       - `current_days` сбрасывается в 0
+       - `is_completed` сбрасывается в false
+       - `completed_at` очищается
+       - Пользователи могут начать выполнение спринтов заново
+    
+    6. **Важные моменты:**
+       - Проверка выполняется только один раз в день (при ежедневном сбросе)
+       - Если пользователь выполнил условие спринта в течение дня, счетчик увеличится при следующем ежедневном сбросе
+       - Если условие не выполнено в какой-то день, счетчик не изменяется (не уменьшается)
+       - Прогресс не теряется при пропуске дней - счетчик просто не увеличивается
+       - Для выполнения спринта нужно выполнять условие каждый день подряд до достижения `target_days`
+  version: 3.0.0
   contact:
     name: API Support
 
@@ -25,6 +81,28 @@ tags:
     description: Настройки пользователей
   - name: Habits
     description: Управление привычками
+  - name: Sprints
+    description: |
+      Система спринтов для мотивации пользователей.
+      
+      **Логика работы спринтов:**
+      
+      1. **Автоматическая проверка:** Проверка выполнения спринтов происходит автоматически при ежедневном сбросе привычек (каждый день в 00:00 по часовому поясу пользователя).
+      
+      2. **Типы спринтов:**
+         - **habit_series** - Поддерживать серию привычки несколько дней подряд. Проверяется, что серия привычки (поле `series`) >= `min_series`.
+         - **all_habits** - Выполнять все активные привычки несколько дней подряд. Проверяется, что все активные привычки пользователя имеют `is_done = true`.
+         - **habit_increase** - Увеличить значение любой привычки на определенное количество процентов. Проверяется, что `current_value` привычки >= `value * percent_increase / 100`.
+      
+      3. **Отслеживание прогресса:** Прогресс отслеживается по неделям (с понедельника). Каждая неделя начинается с понедельника 00:00 UTC.
+      
+      4. **Начисление наград:** Когда пользователь выполняет условие спринта в течение дня, счетчик `current_days` увеличивается на 1. Когда `current_days` достигает `target_days`, спринт считается выполненным и пользователю начисляются коины (`coins_reward`). Награда начисляется только один раз.
+      
+      5. **Обнуление результатов:** Каждый понедельник в 00:00 UTC все прогрессы спринтов обнуляются (`current_days = 0`, `is_completed = false`), и пользователи могут начать выполнение спринтов заново.
+      
+      6. **Проверка выполняется один раз в день:** Система проверяет выполнение спринта один раз в день при ежедневном сбросе. Если условие выполнено - счетчик дней увеличивается. Если условие не выполнено - счетчик не изменяется.
+  - name: Admin
+    description: Административные эндпоинты (требуют прав администратора)
   - name: Test
     description: Тестовые эндпоинты (только в тестовом режиме)
 
@@ -702,6 +780,271 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /sprints:
+    get:
+      tags:
+        - Sprints
+      summary: Получить все спринты
+      description: |
+        Возвращает список всех спринтов. Можно фильтровать по активности через query параметр `is_active`.
+        
+        **Примечание:** Спринты доступны всем пользователям для просмотра, но создавать и управлять ими могут только администраторы.
+      operationId: getAllSprints
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: is_active
+          in: query
+          description: Фильтр по активности спринта (true - только активные, false - только неактивные, без параметра - все)
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Успешное получение списка спринтов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sprint'
+              example:
+                - id: 1
+                  title: "Поддерживать серию чтения"
+                  description: "Поддерживать серию привычки 'Читать книгу' минимум 5 дней подряд"
+                  type: "habit_series"
+                  target_days: 7
+                  coins_reward: 100
+                  is_active: true
+                  habit_id: 1
+                  min_series: 5
+                  percent_increase: null
+                  created_at: "2024-01-01T00:00:00Z"
+                  updated_at: "2024-01-01T00:00:00Z"
+                - id: 2
+                  title: "Выполнить все привычки"
+                  description: "Выполнять все активные привычки 7 дней подряд"
+                  type: "all_habits"
+                  target_days: 7
+                  coins_reward: 150
+                  is_active: true
+                  habit_id: null
+                  min_series: null
+                  percent_increase: null
+                  created_at: "2024-01-01T00:00:00Z"
+                  updated_at: "2024-01-01T00:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sprints/progress:
+    get:
+      tags:
+        - Sprints
+      summary: Получить прогресс по спринтам текущего пользователя
+      description: |
+        Возвращает прогресс текущего авторизованного пользователя по всем активным спринтам за текущую неделю.
+        
+        **Логика прогресса:**
+        - Прогресс отслеживается отдельно для каждой недели (неделя начинается с понедельника)
+        - Поле `current_days` показывает, сколько дней подряд пользователь выполнял условие спринта
+        - Поле `is_completed` показывает, выполнен ли спринт (достигнута ли цель `target_days`)
+        - Если спринт выполнен, награда уже начислена и `completed_at` содержит дату выполнения
+        - Каждый понедельник прогресс обнуляется автоматически
+      operationId: getSprintProgress
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Успешное получение прогресса
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSprintProgress'
+              example:
+                - id: 1
+                  user_id: 123456789
+                  sprint_id: 1
+                  current_days: 5
+                  is_completed: false
+                  completed_at: null
+                  created_at: "2024-01-01T00:00:00Z"
+                  updated_at: "2024-01-05T00:00:00Z"
+                - id: 2
+                  user_id: 123456789
+                  sprint_id: 2
+                  current_days: 7
+                  is_completed: true
+                  completed_at: "2024-01-07T00:00:00Z"
+                  created_at: "2024-01-01T00:00:00Z"
+                  updated_at: "2024-01-07T00:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/sprints:
+    post:
+      tags:
+        - Admin
+        - Sprints
+      summary: Создать новый спринт (только для администраторов)
+      description: |
+        Создает новый спринт. Доступно только администраторам.
+        
+        **Типы спринтов и их параметры:**
+        
+        1. **habit_series** - Поддерживать серию привычки несколько дней подряд
+           - Требует: `habit_id` (ID привычки), `min_series` (минимальная серия)
+           - Проверка: каждый день проверяется, что `habit.series >= min_series`
+           - Пример: "Поддерживать серию привычки 'Читать книгу' минимум 5 дней подряд"
+        
+        2. **all_habits** - Выполнять все привычки несколько дней подряд
+           - Не требует дополнительных параметров
+           - Проверка: каждый день проверяется, что все активные привычки пользователя имеют `is_done = true`
+           - Пример: "Выполнять все привычки 7 дней подряд"
+        
+        3. **habit_increase** - Увеличить значение любой привычки на определенное количество процентов
+           - Требует: `habit_id` (ID привычки), `percent_increase` (процент увеличения)
+           - Проверка: каждый день проверяется, что `habit.current_value >= habit.value * percent_increase / 100`
+           - Пример: "Увеличить значение привычки 'Читать книгу' на 20%"
+      operationId: createSprint
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSprintRequest'
+            examples:
+              habit_series:
+                summary: Спринт типа habit_series
+                value:
+                  title: "Поддерживать серию чтения"
+                  description: "Поддерживать серию привычки 'Читать книгу' минимум 5 дней подряд"
+                  type: "habit_series"
+                  target_days: 7
+                  coins_reward: 100
+                  habit_id: 1
+                  min_series: 5
+              all_habits:
+                summary: Спринт типа all_habits
+                value:
+                  title: "Выполнить все привычки"
+                  description: "Выполнять все активные привычки 7 дней подряд"
+                  type: "all_habits"
+                  target_days: 7
+                  coins_reward: 150
+              habit_increase:
+                summary: Спринт типа habit_increase
+                value:
+                  title: "Увеличить чтение на 20%"
+                  description: "Увеличить значение привычки 'Читать книгу' на 20%"
+                  type: "habit_increase"
+                  target_days: 3
+                  coins_reward: 50
+                  habit_id: 1
+                  percent_increase: 20
+      responses:
+        '201':
+          description: Спринт успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sprint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (требуются права администратора)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/sprints/{id}:
+    put:
+      tags:
+        - Admin
+        - Sprints
+      summary: Обновить спринт (только для администраторов)
+      description: Обновляет информацию о спринте. Доступно только администраторам.
+      operationId: updateSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID спринта
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSprintRequest'
+      responses:
+        '200':
+          description: Спринт успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sprint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (требуются права администратора)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      $ref: '#/paths/~1admin~1sprints~1{id}/put'
+    delete:
+      tags:
+        - Admin
+        - Sprints
+      summary: Удалить спринт (только для администраторов)
+      description: Удаляет спринт по его ID. Доступно только администраторам.
+      operationId: deleteSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID спринта
+      responses:
+        '200':
+          description: Спринт успешно удален
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Sprint deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав (требуются права администратора)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -731,12 +1074,22 @@ components:
           type: string
           format: date-time
           description: Дата авторизации
+        coins:
+          type: integer
+          description: Количество коинов пользователя
+          default: 0
+        is_admin:
+          type: boolean
+          description: Является ли пользователь администратором
+          default: false
       example:
         id: 123456789
         username: "john_doe"
         first_name: "John"
         photo_url: "https://t.me/i/userpic/123/john_doe.jpg"
         auth_date: "2024-01-01T00:00:00Z"
+        coins: 250
+        is_admin: false
 
     TokenPair:
       type: object
@@ -765,6 +1118,8 @@ components:
           first_name: "John"
           photo_url: "https://t.me/i/userpic/123/john_doe.jpg"
           auth_date: "2024-01-01T00:00:00Z"
+          coins: 250
+          is_admin: false
         tokens:
           access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -858,6 +1213,168 @@ components:
         type: "beneficial"
         series: 5
         created_at: "2024-01-01T00:00:00Z"
+
+    Sprint:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID спринта
+        title:
+          type: string
+          description: Название спринта
+        description:
+          type: string
+          description: Описание спринта
+        type:
+          type: string
+          enum: [habit_series, all_habits, habit_increase]
+          description: |
+            Тип спринта:
+            - **habit_series** - Поддерживать серию привычки несколько дней подряд
+            - **all_habits** - Выполнять все привычки несколько дней подряд
+            - **habit_increase** - Увеличить значение любой привычки на определенное количество процентов
+        target_days:
+          type: integer
+          description: Количество дней, которые нужно выполнять условие спринта для получения награды
+          minimum: 1
+        coins_reward:
+          type: integer
+          description: Количество коинов, которые начисляются при выполнении спринта
+          minimum: 0
+        is_active:
+          type: boolean
+          description: Активен ли спринт (неактивные спринты не проверяются)
+          default: true
+        habit_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID привычки (требуется для типов habit_series и habit_increase)
+        min_series:
+          type: integer
+          nullable: true
+          description: Минимальная серия привычки (требуется для типа habit_series)
+        percent_increase:
+          type: integer
+          nullable: true
+          description: Процент увеличения значения привычки (требуется для типа habit_increase)
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания спринта
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата последнего обновления спринта
+      example:
+        id: 1
+        title: "Поддерживать серию чтения"
+        description: "Поддерживать серию привычки 'Читать книгу' минимум 5 дней подряд"
+        type: "habit_series"
+        target_days: 7
+        coins_reward: 100
+        is_active: true
+        habit_id: 1
+        min_series: 5
+        created_at: "2024-01-01T00:00:00Z"
+        updated_at: "2024-01-01T00:00:00Z"
+
+    CreateSprintRequest:
+      type: object
+      required:
+        - title
+        - type
+        - target_days
+        - coins_reward
+      properties:
+        title:
+          type: string
+          description: Название спринта
+        description:
+          type: string
+          description: Описание спринта (опционально)
+        type:
+          type: string
+          enum: [habit_series, all_habits, habit_increase]
+          description: |
+            Тип спринта:
+            - **habit_series** - требует `habit_id` и `min_series`
+            - **all_habits** - не требует дополнительных параметров
+            - **habit_increase** - требует `habit_id` и `percent_increase`
+        target_days:
+          type: integer
+          description: Количество дней для выполнения спринта
+          minimum: 1
+        coins_reward:
+          type: integer
+          description: Награда в коинах за выполнение спринта
+          minimum: 0
+        habit_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID привычки (обязательно для habit_series и habit_increase)
+        min_series:
+          type: integer
+          nullable: true
+          description: "Минимальная серия привычки (обязательно для habit_series, minimum: 1)"
+        percent_increase:
+          type: integer
+          nullable: true
+          description: "Процент увеличения значения привычки (обязательно для habit_increase, minimum: 1)"
+
+    UserSprintProgress:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID записи прогресса
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        sprint_id:
+          type: integer
+          format: int64
+          description: ID спринта
+        current_days:
+          type: integer
+          description: |
+            Текущее количество дней выполнения спринта в текущей неделе.
+            Увеличивается на 1 каждый день, когда условие спринта выполнено.
+            Обнуляется каждый понедельник.
+          minimum: 0
+        is_completed:
+          type: boolean
+          description: |
+            Выполнен ли спринт (достигнута ли цель target_days).
+            Когда становится true, награда начисляется и больше не увеличивается.
+          default: false
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата и время выполнения спринта (когда is_completed стал true)
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания записи прогресса
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата последнего обновления прогресса
+      example:
+        id: 1
+        user_id: 123456789
+        sprint_id: 1
+        current_days: 5
+        is_completed: false
+        completed_at: null
+        created_at: "2024-01-01T00:00:00Z"
+        updated_at: "2024-01-05T00:00:00Z"
 
     Error:
       type: object

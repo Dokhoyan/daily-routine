@@ -11,7 +11,7 @@ import (
 )
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date").
+	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date", "coins", "is_admin").
 		PlaceholderFormat(sq.Dollar).
 		From("users").
 		Where(sq.Eq{"id": id})
@@ -23,6 +23,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 
 	user := &models.User{}
 	var authDate sql.NullTime
+	var isAdmin sql.NullBool
 
 	err = r.db.QueryRowContext(ctx, query, args...).Scan(
 		&user.ID,
@@ -30,6 +31,8 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 		&user.FirstName,
 		&user.PhotoURL,
 		&authDate,
+		&user.Coins,
+		&isAdmin,
 	)
 
 	if err != nil {
@@ -42,6 +45,9 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 	if authDate.Valid {
 		user.AuthDate = authDate.Time
 	}
+	if isAdmin.Valid {
+		user.IsAdmin = isAdmin.Bool
+	}
 
 	return user, nil
 }
@@ -49,8 +55,8 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 func (r *Repository) CreateUser(ctx context.Context, user *models.User) error {
 	builder := sq.Insert("users").
 		PlaceholderFormat(sq.Dollar).
-		Columns("id", "username", "first_name", "photo_url", "auth_date").
-		Values(user.ID, user.Username, user.FirstName, user.PhotoURL, user.AuthDate)
+		Columns("id", "username", "first_name", "photo_url", "auth_date", "coins", "is_admin").
+		Values(user.ID, user.Username, user.FirstName, user.PhotoURL, user.AuthDate, user.Coins, user.IsAdmin)
 
 	query, args, err := builder.ToSql()
 	if err != nil {
@@ -72,6 +78,8 @@ func (r *Repository) UpdateUser(ctx context.Context, user *models.User) error {
 		Set("first_name", user.FirstName).
 		Set("photo_url", user.PhotoURL).
 		Set("auth_date", user.AuthDate).
+		Set("coins", user.Coins).
+		Set("is_admin", user.IsAdmin).
 		Where(sq.Eq{"id": user.ID})
 
 	query, args, err := builder.ToSql()
@@ -96,8 +104,36 @@ func (r *Repository) UpdateUser(ctx context.Context, user *models.User) error {
 	return nil
 }
 
+func (r *Repository) AddCoins(ctx context.Context, userID int64, amount int) error {
+	builder := sq.Update("users").
+		PlaceholderFormat(sq.Dollar).
+		Set("coins", sq.Expr("coins + ?", amount)).
+		Where(sq.Eq{"id": userID})
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build update query: %w", err)
+	}
+
+	result, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to add coins: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
 func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
-	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date").
+	builder := sq.Select("id", "username", "first_name", "photo_url", "auth_date", "coins", "is_admin").
 		PlaceholderFormat(sq.Dollar).
 		From("users").
 		OrderBy("id")
@@ -117,6 +153,7 @@ func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	for rows.Next() {
 		user := &models.User{}
 		var authDate sql.NullTime
+		var isAdmin sql.NullBool
 
 		err := rows.Scan(
 			&user.ID,
@@ -124,6 +161,8 @@ func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 			&user.FirstName,
 			&user.PhotoURL,
 			&authDate,
+			&user.Coins,
+			&isAdmin,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -131,6 +170,9 @@ func (r *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 
 		if authDate.Valid {
 			user.AuthDate = authDate.Time
+		}
+		if isAdmin.Valid {
+			user.IsAdmin = isAdmin.Bool
 		}
 
 		users = append(users, user)

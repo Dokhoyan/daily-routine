@@ -40,6 +40,17 @@ type AuthService interface {
 	RevokeAllUserTokens(ctx context.Context, userID int64) error
 }
 
+type SprintService interface {
+	GetAll(ctx context.Context, isActive *bool) ([]*models.Sprint, error)
+	GetByID(ctx context.Context, id int64) (*models.Sprint, error)
+	Create(ctx context.Context, req *models.CreateSprintRequest) (*models.Sprint, error)
+	Update(ctx context.Context, id int64, req *models.CreateSprintRequest) (*models.Sprint, error)
+	Delete(ctx context.Context, id int64) error
+	GetUserProgress(ctx context.Context, userID int64) ([]*models.UserSprintProgress, error)
+	CheckAndUpdateSprintProgress(ctx context.Context, userID int64) error
+	ResetWeeklyProgress(ctx context.Context) error
+}
+
 type TestTokenResponse struct {
 	User    *models.User      `json:"user"`
 	Tokens  *models.TokenPair `json:"tokens"`

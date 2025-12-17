@@ -9,12 +9,14 @@ import (
 	"github.com/Dokhoyan/daily-routine/internal/config"
 	authHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/auth"
 	habitHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/habit"
+	sprintHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/sprint"
 	settingsHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/settings"
 	userHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/user"
 	postgresRepo "github.com/Dokhoyan/daily-routine/internal/repository/postgres"
 	"github.com/Dokhoyan/daily-routine/internal/service"
 	authService "github.com/Dokhoyan/daily-routine/internal/service/auth"
 	habitService "github.com/Dokhoyan/daily-routine/internal/service/habit"
+	sprintService "github.com/Dokhoyan/daily-routine/internal/service/sprint"
 	settingsService "github.com/Dokhoyan/daily-routine/internal/service/settings"
 	userService "github.com/Dokhoyan/daily-routine/internal/service/user"
 	_ "github.com/lib/pq"
@@ -36,11 +38,13 @@ type serviceProvider struct {
 	userService     service.UserService
 	settingsService service.SettingsService
 	habitService    service.HabitService
+	sprintService   service.SprintService
 
 	authImpl     *authHandler.Implementation
 	userImpl     *userHandler.Implementation
 	settingsImpl *settingsHandler.Implementation
 	habitImpl    *habitHandler.Implementation
+	sprintImpl   *sprintHandler.Implementation
 }
 
 func newServiceProvider() *serviceProvider {
@@ -172,6 +176,14 @@ func (s *serviceProvider) HabitService(ctx context.Context) service.HabitService
 	return s.habitService
 }
 
+func (s *serviceProvider) SprintService(ctx context.Context) service.SprintService {
+	if s.sprintService == nil {
+		repo := s.Repository(ctx)
+		s.sprintService = sprintService.NewService(repo, repo, repo)
+	}
+	return s.sprintService
+}
+
 func (s *serviceProvider) AuthImpl(ctx context.Context) *authHandler.Implementation {
 	if s.authImpl == nil {
 		s.authImpl = authHandler.NewImplementation(s.AuthService(ctx))
@@ -198,6 +210,13 @@ func (s *serviceProvider) HabitImpl(ctx context.Context) *habitHandler.Implement
 		s.habitImpl = habitHandler.NewImplementation(s.HabitService(ctx))
 	}
 	return s.habitImpl
+}
+
+func (s *serviceProvider) SprintImpl(ctx context.Context) *sprintHandler.Implementation {
+	if s.sprintImpl == nil {
+		s.sprintImpl = sprintHandler.NewImplementation(s.SprintService(ctx), s.UserService(ctx))
+	}
+	return s.sprintImpl
 }
 
 func (s *serviceProvider) CORSMiddleware() func(http.Handler) http.Handler {

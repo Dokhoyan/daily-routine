@@ -84,6 +84,12 @@ func (a *App) processHabitDailyReset(ctx context.Context) {
 				continue
 			}
 
+			// Проверяем выполнение спринтов после обновления привычек
+			sprintService := a.serviceProvider.SprintService(ctx)
+			if err := sprintService.CheckAndUpdateSprintProgress(ctx, user.ID); err != nil {
+				log.Printf("warning: failed to check sprint progress for user %d: %v", user.ID, err)
+			}
+
 			lastProcessedDayMu.Lock()
 			lastProcessedDay[user.ID] = dateKey
 			lastProcessedDayMu.Unlock()

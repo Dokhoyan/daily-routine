@@ -62,6 +62,8 @@ func (a *App) Run(ctx context.Context) error {
 
 	go a.startHabitDailyReset(ctx)
 
+	go a.startSprintWeeklyReset(ctx)
+
 	select {
 	case <-ctx.Done():
 		log.Println("shutting down server...")
@@ -125,9 +127,11 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	userImpl := a.serviceProvider.UserImpl(ctx)
 	settingsImpl := a.serviceProvider.SettingsImpl(ctx)
 	habitImpl := a.serviceProvider.HabitImpl(ctx)
+	sprintImpl := a.serviceProvider.SprintImpl(ctx)
 
 	corsMiddleware := a.serviceProvider.CORSMiddleware()
 	authMiddleware := middleware.AuthMiddleware(a.serviceProvider.AuthService(ctx))
+	adminMiddleware := middleware.AdminMiddleware(a.serviceProvider.UserService(ctx))
 
 	publicMux := http.NewServeMux()
 	authImpl.RegisterRoutes(publicMux)
@@ -149,6 +153,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	settingsImpl.RegisterRoutes(protectedMux)
 	habitImpl.RegisterRoutes(protectedMux)
 	userImpl.RegisterRoutes(protectedMux)
+	sprintImpl.RegisterRoutes(protectedMux)
 
 	protectedHandler := corsMiddleware(authMiddleware(protectedMux))
 
@@ -156,6 +161,22 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	mux.Handle("/user/me/", protectedHandler)
 	mux.Handle("/habits", protectedHandler)
 	mux.Handle("/habits/", protectedHandler)
+	mux.Handle("/sprints", protectedHandler)
+	mux.Handle("/sprints/", protectedHandler)
+
+	// Админские роуты для управления спринтами
+	adminMux := http.NewServeMux()
+	adminMux.HandleFunc("/sprints", sprintImpl.Create)
+	adminMux.HandleFunc("/sprints/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+			sprintImpl.Update(w, r)
+		} else if r.Method == http.MethodDelete {
+			sprintImpl.Delete(w, r)
+		}
+	})
+	adminHandler := corsMiddleware(authMiddleware(adminMiddleware(adminMux)))
+	mux.Handle("/admin/sprints", adminHandler)
+	mux.Handle("/admin/sprints/", adminHandler)
 
 	testCfg := a.serviceProvider.TestConfig()
 	if testCfg.IsTestModeEnabled() {

@@ -12,6 +12,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	UpdateUser(ctx context.Context, user *models.User) error
 	GetAllUsers(ctx context.Context) ([]*models.User, error)
+	AddCoins(ctx context.Context, userID int64, amount int) error
 }
 
 type HabitRepository interface {
@@ -40,4 +41,16 @@ type TokenRepository interface {
 	AddToBlacklist(ctx context.Context, tokenHash string, userID int64, expiresAt time.Time, reason *string) error
 	IsTokenBlacklisted(ctx context.Context, tokenHash string) (bool, error)
 	DeleteExpiredBlacklistEntries(ctx context.Context) error
+}
+
+type SprintRepository interface {
+	GetSprintByID(ctx context.Context, id int64) (*models.Sprint, error)
+	GetAllSprints(ctx context.Context, isActive *bool) ([]*models.Sprint, error)
+	CreateSprint(ctx context.Context, sprint *models.Sprint) (*models.Sprint, error)
+	UpdateSprint(ctx context.Context, sprint *models.Sprint) error
+	DeleteSprint(ctx context.Context, id int64) error
+	GetUserSprintProgress(ctx context.Context, userID int64, sprintID int64) (*models.UserSprintProgress, error)
+	GetUserSprintProgresses(ctx context.Context, userID int64) ([]*models.UserSprintProgress, error)
+	CreateOrUpdateUserSprintProgress(ctx context.Context, progress *models.UserSprintProgress) error
+	ResetAllUserSprintProgresses(ctx context.Context) error
 }

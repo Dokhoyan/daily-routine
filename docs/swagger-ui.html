@@ -23,21 +23,69 @@
   <div id="swagger-ui"></div>
   <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
   <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+  <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script>
     window.onload = function() {
-      const ui = SwaggerUIBundle({
-        url: "swagger.yaml",
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [
-          SwaggerUIBundle.presets.apis,
-          SwaggerUIStandalonePreset
-        ],
-        plugins: [
-          SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "StandaloneLayout"
-      });
+      // Загружаем YAML файл и конвертируем в JSON
+      fetch('./swagger.yaml')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to load swagger.yaml: ' + response.statusText);
+          }
+          return response.text();
+        })
+        .then(yamlText => {
+          try {
+            // Парсим YAML в объект
+            const spec = jsyaml.load(yamlText);
+            
+            // Инициализируем Swagger UI с объектом spec
+            const ui = SwaggerUIBundle({
+              spec: spec,
+              dom_id: '#swagger-ui',
+              deepLinking: true,
+              presets: [
+                SwaggerUIBundle.presets.apis,
+                SwaggerUIStandalonePreset
+              ],
+              plugins: [
+                SwaggerUIBundle.plugins.DownloadUrl
+              ],
+              layout: "StandaloneLayout",
+              validatorUrl: null,
+              tryItOutEnabled: true,
+              supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
+            });
+          } catch (error) {
+            console.error('Error parsing YAML:', error);
+            document.getElementById('swagger-ui').innerHTML = 
+              '<div style="padding: 20px; color: red;">' +
+              '<h2>Error parsing Swagger definition</h2>' +
+              '<p>' + error.message + '</p>' +
+              '<p>Please check the browser console for more details.</p>' +
+              '</div>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading swagger.yaml:', error);
+          // Fallback: попробуем загрузить напрямую через url
+          const ui = SwaggerUIBundle({
+            url: "./swagger.yaml",
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+              SwaggerUIBundle.presets.apis,
+              SwaggerUIStandalonePreset
+            ],
+            plugins: [
+              SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout",
+            validatorUrl: null,
+            tryItOutEnabled: true,
+            supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
+          });
+        });
     };
   </script>
 </body>
