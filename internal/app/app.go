@@ -180,7 +180,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 			sprintImpl.GetAll(w, r)
 		}
 	})
-	adminHandler := corsMiddleware(adminMiddleware(adminMux))
+	adminHandler := http.StripPrefix("/admin", corsMiddleware(adminMiddleware(adminMux)))
 	mux.Handle("/admin/sprints", adminHandler)
 	mux.Handle("/admin/sprints/", adminHandler)
 
