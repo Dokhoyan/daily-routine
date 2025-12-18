@@ -6,18 +6,18 @@ import (
 	"net/http"
 
 	"github.com/Dokhoyan/daily-routine/internal/config"
-	"github.com/Dokhoyan/daily-routine/internal/logger"
 	authHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/auth"
 	habitHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/habit"
-	sprintHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/sprint"
 	settingsHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/settings"
+	sprintHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/sprint"
 	userHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/user"
+	"github.com/Dokhoyan/daily-routine/internal/logger"
 	postgresRepo "github.com/Dokhoyan/daily-routine/internal/repository/postgres"
 	"github.com/Dokhoyan/daily-routine/internal/service"
 	authService "github.com/Dokhoyan/daily-routine/internal/service/auth"
 	habitService "github.com/Dokhoyan/daily-routine/internal/service/habit"
-	sprintService "github.com/Dokhoyan/daily-routine/internal/service/sprint"
 	settingsService "github.com/Dokhoyan/daily-routine/internal/service/settings"
+	sprintService "github.com/Dokhoyan/daily-routine/internal/service/sprint"
 	userService "github.com/Dokhoyan/daily-routine/internal/service/user"
 	_ "github.com/lib/pq"
 )
@@ -243,7 +243,6 @@ func (s *serviceProvider) CORSMiddleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 			allowedOrigin := s.CORSConfig().GetAllowedOrigin()
-			testModeEnabled := s.TestConfig().IsTestModeEnabled()
 
 			// Функция для установки CORS заголовков
 			setCORSHeaders := func(allowedOriginValue string) {
@@ -258,15 +257,21 @@ func (s *serviceProvider) CORSMiddleware() func(http.Handler) http.Handler {
 			shouldAllow := false
 			originToAllow := ""
 
-			// В тестовом режиме разрешаем несколько origin
-			if testModeEnabled && origin != "" {
-				if origin == "https://daily-routine.ru" || origin == "http://localhost:3000" || origin == "http://localhost:5173" {
-					shouldAllow = true
-					originToAllow = origin
-				}
+			// Функция для проверки поддоменов daily-routine.ru
+			isDailyRoutineSubdomain := func(origin string) bool {
+				return origin == "https://daily-routine.ru" ||
+					origin == "https://admin.daily-routine.ru" ||
+					origin == "http://localhost:3000" ||
+					origin == "http://localhost:5173"
 			}
 
-			// Если не разрешен в тестовом режиме, проверяем обычную конфигурацию
+			// Всегда проверяем поддомены daily-routine.ru (для продакшена и тестового режима)
+			if origin != "" && isDailyRoutineSubdomain(origin) {
+				shouldAllow = true
+				originToAllow = origin
+			}
+
+			// Если не разрешен через поддомены, проверяем обычную конфигурацию
 			if !shouldAllow {
 				if allowedOrigin == "*" {
 					shouldAllow = true
