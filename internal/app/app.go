@@ -170,7 +170,13 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 
 	// Админские роуты для управления спринтами (только Basic Auth, без JWT)
 	adminMux := http.NewServeMux()
-	adminMux.HandleFunc("/sprints", sprintImpl.Create)
+	adminMux.HandleFunc("/sprints", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			sprintImpl.GetAll(w, r)
+		} else if r.Method == http.MethodPost {
+			sprintImpl.Create(w, r)
+		}
+	})
 	adminMux.HandleFunc("/sprints/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut || r.Method == http.MethodPatch {
 			sprintImpl.Update(w, r)
