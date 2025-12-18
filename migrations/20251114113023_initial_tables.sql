@@ -30,7 +30,7 @@ CREATE TABLE habits (
     is_active       BOOLEAN DEFAULT TRUE,
     is_done         BOOLEAN DEFAULT FALSE,
     type            habit_type NOT NULL DEFAULT 'beneficial',
-    series          INTEGER DEFAULT 0,  
+    series          INTEGER DEFAULT 0,
     created_at      TIMESTAMP DEFAULT NOW()
 );
 

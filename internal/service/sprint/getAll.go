@@ -20,3 +20,4 @@ func (s *serv) GetAll(ctx context.Context, isActive *bool) ([]*models.Sprint, er
 	return sprints, nil
 }
 
+

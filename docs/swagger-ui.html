@@ -69,23 +69,23 @@
         .catch(error => {
           console.error('Error loading swagger.yaml:', error);
           // Fallback: попробуем загрузить напрямую через url
-          const ui = SwaggerUIBundle({
+      const ui = SwaggerUIBundle({
             url: "./swagger.yaml",
-            dom_id: '#swagger-ui',
-            deepLinking: true,
-            presets: [
-              SwaggerUIBundle.presets.apis,
-              SwaggerUIStandalonePreset
-            ],
-            plugins: [
-              SwaggerUIBundle.plugins.DownloadUrl
-            ],
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
             layout: "StandaloneLayout",
             validatorUrl: null,
             tryItOutEnabled: true,
             supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
           });
-        });
+      });
     };
   </script>
 </body>

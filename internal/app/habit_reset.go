@@ -2,10 +2,10 @@ package app
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
+	"github.com/Dokhoyan/daily-routine/internal/logger"
 	"github.com/robfig/cron/v3"
 )
 
@@ -20,16 +20,16 @@ func (a *App) startHabitDailyReset(ctx context.Context) {
 	})
 
 	if err != nil {
-		log.Printf("error: failed to schedule habit daily reset: %v", err)
+		logger.Errorf("failed to schedule habit daily reset: %v", err)
 		return
 	}
 
 	c.Start()
-	log.Println("habit daily reset scheduler started (every hour at :00)")
+	logger.Info("habit daily reset scheduler started (every hour at :00)")
 
 	go func() {
 		<-ctx.Done()
-		log.Println("stopping habit daily reset scheduler...")
+		logger.Info("stopping habit daily reset scheduler...")
 		c.Stop()
 	}()
 }
@@ -41,7 +41,7 @@ func (a *App) processHabitDailyReset(ctx context.Context) {
 
 	users, err := userService.GetAll(ctx)
 	if err != nil {
-		log.Printf("warning: failed to get users for daily reset: %v", err)
+		logger.Warnf("failed to get users for daily reset: %v", err)
 		return
 	}
 
@@ -50,13 +50,13 @@ func (a *App) processHabitDailyReset(ctx context.Context) {
 	for _, user := range users {
 		settings, err := settingsService.GetByUserID(ctx, user.ID)
 		if err != nil {
-			log.Printf("warning: failed to get settings for user %d: %v", user.ID, err)
+			logger.Warnf("failed to get settings for user %d: %v", user.ID, err)
 			continue
 		}
 
 		loc, err := time.LoadLocation(settings.Timezone)
 		if err != nil {
-			log.Printf("warning: invalid timezone %s for user %d: %v", settings.Timezone, user.ID, err)
+			logger.Warnf("invalid timezone %s for user %d: %v", settings.Timezone, user.ID, err)
 			continue
 		}
 
@@ -75,26 +75,26 @@ func (a *App) processHabitDailyReset(ctx context.Context) {
 
 			habits, err := habitService.GetByUserID(ctx, user.ID, nil, nil)
 			if err != nil {
-				log.Printf("warning: failed to get habits for user %d: %v", user.ID, err)
+				logger.Warnf("failed to get habits for user %d: %v", user.ID, err)
 				continue
 			}
 
 			if err := habitService.ProcessDailyReset(ctx, user.ID, habits); err != nil {
-				log.Printf("warning: failed to process daily reset for user %d: %v", user.ID, err)
+				logger.Warnf("failed to process daily reset for user %d: %v", user.ID, err)
 				continue
 			}
 
 			// Проверяем выполнение спринтов после обновления привычек
 			sprintService := a.serviceProvider.SprintService(ctx)
 			if err := sprintService.CheckAndUpdateSprintProgress(ctx, user.ID); err != nil {
-				log.Printf("warning: failed to check sprint progress for user %d: %v", user.ID, err)
+				logger.Warnf("failed to check sprint progress for user %d: %v", user.ID, err)
 			}
 
 			lastProcessedDayMu.Lock()
 			lastProcessedDay[user.ID] = dateKey
 			lastProcessedDayMu.Unlock()
 
-			log.Printf("processed daily reset for user %d (timezone: %s, date: %s)", user.ID, settings.Timezone, dateKey)
+			logger.Infof("processed daily reset for user %d (timezone: %s, date: %s)", user.ID, settings.Timezone, dateKey)
 		}
 	}
 }

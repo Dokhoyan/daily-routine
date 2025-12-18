@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Dokhoyan/daily-routine/internal/logger"
 	"github.com/Dokhoyan/daily-routine/internal/models"
 	sq "github.com/Masterminds/squirrel"
 )
@@ -116,6 +117,8 @@ func (r *Repository) GetHabitsByUserID(ctx context.Context, userID int64, habitT
 }
 
 func (r *Repository) CreateHabit(ctx context.Context, habit *models.Habit) (*models.Habit, error) {
+	logger.Infof("habit repo CreateHabit: started for userID=%d, title=%s", habit.UserID, habit.Title)
+
 	builder := sq.Insert("habits").
 		PlaceholderFormat(sq.Dollar).
 		Columns("user_id", "title", "format", "unit", "value", "current_value", "is_active", "is_done", "type", "series").
@@ -124,14 +127,18 @@ func (r *Repository) CreateHabit(ctx context.Context, habit *models.Habit) (*mod
 
 	query, args, err := builder.ToSql()
 	if err != nil {
+		logger.Errorf("habit repo CreateHabit: failed to build query: %v", err)
 		return nil, fmt.Errorf("failed to build insert query: %w", err)
 	}
+
+	logger.Infof("habit repo CreateHabit: executing query: %s with args: %v", query, args)
 
 	var id int64
 	var createdAt sql.NullTime
 
 	err = r.db.QueryRowContext(ctx, query, args...).Scan(&id, &createdAt)
 	if err != nil {
+		logger.Errorf("habit repo CreateHabit: db error: %v", err)
 		return nil, fmt.Errorf("failed to create habit: %w", err)
 	}
 
@@ -140,6 +147,7 @@ func (r *Repository) CreateHabit(ctx context.Context, habit *models.Habit) (*mod
 		habit.CreatedAt = createdAt.Time
 	}
 
+	logger.Infof("habit repo CreateHabit: success, id=%d", id)
 	return habit, nil
 }
 

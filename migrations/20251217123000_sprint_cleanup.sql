@@ -32,3 +32,4 @@ CREATE INDEX IF NOT EXISTS idx_sprints_created_by ON sprints(created_by);
 
 -- +goose StatementEnd
 
+

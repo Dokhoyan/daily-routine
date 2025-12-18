@@ -3,12 +3,12 @@ package app
 import (
 	"context"
 	"flag"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/Dokhoyan/daily-routine/internal/config"
 	"github.com/Dokhoyan/daily-routine/internal/http-server/middleware"
+	"github.com/Dokhoyan/daily-routine/internal/logger"
 )
 
 var configPath string
@@ -39,12 +39,12 @@ func (a *App) Run(ctx context.Context) error {
 			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer shutdownCancel()
 			if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
-				log.Printf("server shutdown error in defer: %v", err)
+				logger.Errorf("server shutdown error in defer: %v", err)
 			}
 		}
 		if a.serviceProvider != nil {
 			if err := a.serviceProvider.CloseDB(); err != nil {
-				log.Printf("database close error: %v", err)
+				logger.Errorf("database close error: %v", err)
 			}
 		}
 	}()
@@ -66,22 +66,22 @@ func (a *App) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		log.Println("shutting down server...")
+		logger.Info("shutting down server...")
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 
 		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
-			log.Printf("server shutdown error: %v", err)
+			logger.Errorf("server shutdown error: %v", err)
 			return err
 		}
-		log.Println("server stopped")
+		logger.Info("server stopped")
 		return nil
 	case err := <-serverErrChan:
-		log.Printf("server error occurred, shutting down: %v", err)
+		logger.Errorf("server error occurred, shutting down: %v", err)
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 		if shutdownErr := a.httpServer.Shutdown(shutdownCtx); shutdownErr != nil {
-			log.Printf("server shutdown error after server error: %v", shutdownErr)
+			logger.Errorf("server shutdown error after server error: %v", shutdownErr)
 		}
 		return err
 	}
@@ -89,6 +89,10 @@ func (a *App) Run(ctx context.Context) error {
 
 func (a *App) initDeps(ctx context.Context) error {
 	flag.Parse()
+
+	// Инициализируем логгер первым делом
+	logger.InitDefault()
+	logger.Info("initializing application dependencies")
 
 	inits := []func(context.Context) error{
 		a.initConfig,
@@ -182,7 +186,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	if testCfg.IsTestModeEnabled() {
 		testTokenHandler := corsMiddleware(http.HandlerFunc(authImpl.TestToken(testCfg.IsTestModeEnabled(), testCfg.GetTestUserID())))
 		mux.Handle("/auth/test/token", testTokenHandler)
-		log.Println("⚠️  Test mode enabled: /auth/test/token endpoint is available")
+		logger.Warn("test mode enabled: /auth/test/token endpoint is available")
 	}
 
 	rootMux := http.NewServeMux()
@@ -201,9 +205,10 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 
 func (a *App) runHTTPServer() error {
 	addr := a.serviceProvider.HTTPConfig().Address()
-	log.Printf("HTTP server is running on http://%s", addr)
+	logger.Infof("HTTP server is running on http://%s", addr)
 	err := a.httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
+		logger.Errorf("HTTP server error: %v", err)
 		return err
 	}
 	return nil
@@ -228,9 +233,9 @@ func (a *App) startTokenCleanup(ctx context.Context) {
 func (a *App) cleanupExpiredTokens(ctx context.Context) {
 	repo := a.serviceProvider.Repository(ctx)
 	if err := repo.DeleteExpiredTokens(ctx); err != nil {
-		log.Printf("warning: failed to delete expired tokens: %v", err)
+		logger.Warnf("failed to delete expired tokens: %v", err)
 	}
 	if err := repo.DeleteExpiredBlacklistEntries(ctx); err != nil {
-		log.Printf("warning: failed to delete expired blacklist entries: %v", err)
+		logger.Warnf("failed to delete expired blacklist entries: %v", err)
 	}
 }

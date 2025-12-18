@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net/http"
 
 	"github.com/Dokhoyan/daily-routine/internal/config"
+	"github.com/Dokhoyan/daily-routine/internal/logger"
 	authHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/auth"
 	habitHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/habit"
 	sprintHandler "github.com/Dokhoyan/daily-routine/internal/http-server/handlers/sprint"
@@ -55,8 +55,9 @@ func (s *serviceProvider) PGConfig() config.PGConfig {
 	if s.pgConfig == nil {
 		cfg, err := config.NewPGConfig()
 		if err != nil {
-			log.Fatalf("failed to get pg config: %s", err.Error())
+			logger.Fatalf("failed to get pg config: %s", err.Error())
 		}
+		logger.Info("pg config loaded successfully")
 		s.pgConfig = cfg
 	}
 	return s.pgConfig
@@ -66,8 +67,9 @@ func (s *serviceProvider) HTTPConfig() config.HTTPConfig {
 	if s.httpConfig == nil {
 		cfg, err := config.NewHTTPConfig()
 		if err != nil {
-			log.Fatalf("failed to get http config: %s", err.Error())
+			logger.Fatalf("failed to get http config: %s", err.Error())
 		}
+		logger.Infof("http config loaded: %s", cfg.Address())
 		s.httpConfig = cfg
 	}
 	return s.httpConfig
@@ -77,8 +79,9 @@ func (s *serviceProvider) TelegramConfig() config.TelegramConfig {
 	if s.telegramConfig == nil {
 		cfg, err := config.NewTelegramConfig()
 		if err != nil {
-			log.Fatalf("failed to get telegram config: %s", err.Error())
+			logger.Fatalf("failed to get telegram config: %s", err.Error())
 		}
+		logger.Info("telegram config loaded")
 		s.telegramConfig = cfg
 	}
 	return s.telegramConfig
@@ -88,8 +91,9 @@ func (s *serviceProvider) JWTConfig() config.JWTConfig {
 	if s.jwtConfig == nil {
 		cfg, err := config.NewJWTConfig()
 		if err != nil {
-			log.Fatalf("failed to get jwt config: %s", err.Error())
+			logger.Fatalf("failed to get jwt config: %s", err.Error())
 		}
+		logger.Info("jwt config loaded")
 		s.jwtConfig = cfg
 	}
 	return s.jwtConfig
@@ -119,15 +123,17 @@ func (s *serviceProvider) AuthConfig() config.AuthConfig {
 func (s *serviceProvider) DB(ctx context.Context) *sql.DB {
 	if s.db == nil {
 		pgCfg := s.PGConfig()
+		logger.Info("connecting to database...")
 		db, err := sql.Open("postgres", pgCfg.DSN())
 		if err != nil {
-			log.Fatalf("failed to open database: %v", err)
+			logger.Fatalf("failed to open database: %v", err)
 		}
 
 		if err := db.Ping(); err != nil {
-			log.Fatalf("failed to ping database: %v", err)
+			logger.Fatalf("failed to ping database: %v", err)
 		}
 
+		logger.Info("database connection established")
 		s.db = db
 	}
 	return s.db

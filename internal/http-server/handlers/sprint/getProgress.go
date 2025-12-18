@@ -30,3 +30,4 @@ func (i *Implementation) GetProgress(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, progresses)
 }
 
+
