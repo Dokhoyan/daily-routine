@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Dokhoyan/daily-routine/internal/logger"
 	"github.com/Dokhoyan/daily-routine/internal/models"
@@ -69,5 +70,59 @@ func (s *serv) Create(ctx context.Context, habit *models.Habit) (*models.Habit, 
 	}
 
 	logger.Infof("habit service create: habit created with id=%d", createdHabit.ID)
+
+	// Проверяем спринт new_habit
+	s.checkNewHabitSprint(ctx, habit.UserID)
+
 	return createdHabit, nil
+}
+
+func (s *serv) checkNewHabitSprint(ctx context.Context, userID int64) {
+	active := true
+	sprints, err := s.sprintRepo.GetAllSprints(ctx, &active)
+	if err != nil {
+		logger.Warnf("habit service: failed to get sprints: %v", err)
+		return
+	}
+
+	for _, sprint := range sprints {
+		if sprint.Type != models.SprintTypeNewHabit {
+			continue
+		}
+
+		progress, err := s.sprintRepo.GetUserSprintProgress(ctx, userID, sprint.ID)
+		if err != nil {
+			logger.Warnf("habit service: failed to get sprint progress: %v", err)
+			continue
+		}
+
+		if progress != nil && progress.IsCompleted {
+			continue
+		}
+
+		// Создаём или обновляем прогресс как выполненный
+		now := time.Now()
+		newProgress := &models.UserSprintProgress{
+			UserID:      userID,
+			SprintID:    sprint.ID,
+			CurrentDays: 1,
+			IsCompleted: true,
+			CompletedAt: &now,
+		}
+		if progress != nil {
+			newProgress.ID = progress.ID
+		}
+
+		if err := s.sprintRepo.CreateOrUpdateUserSprintProgress(ctx, newProgress); err != nil {
+			logger.Warnf("habit service: failed to update sprint progress: %v", err)
+			continue
+		}
+
+		// Начисляем награду
+		if err := s.userRepo.AddCoins(ctx, userID, sprint.CoinsReward); err != nil {
+			logger.Warnf("habit service: failed to add coins: %v", err)
+		} else {
+			logger.Infof("habit service: new_habit sprint completed for user %d, awarded %d coins", userID, sprint.CoinsReward)
+		}
+	}
 }

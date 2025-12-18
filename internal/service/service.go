@@ -48,6 +48,7 @@ type SprintService interface {
 	Delete(ctx context.Context, id int64) error
 	GetUserProgress(ctx context.Context, userID int64) ([]*models.UserSprintProgress, error)
 	CheckAndUpdateSprintProgress(ctx context.Context, userID int64) error
+	CheckNewHabitSprint(ctx context.Context, userID int64) error
 	ResetWeeklyProgress(ctx context.Context) error
 }
 

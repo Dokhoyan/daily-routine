@@ -12,7 +12,7 @@ import (
 )
 
 func (r *Repository) GetSprintByID(ctx context.Context, id int64) (*models.Sprint, error) {
-	builder := sq.Select("id", "title", "description", "type", "target_days", "coins_reward", "is_active", "habit_id", "min_series", "percent_increase", "created_at", "updated_at").
+	builder := sq.Select("id", "title", "description", "type", "target_days", "coins_reward", "is_active", "created_at", "updated_at").
 		PlaceholderFormat(sq.Dollar).
 		From("sprints").
 		Where(sq.Eq{"id": id})
@@ -24,9 +24,6 @@ func (r *Repository) GetSprintByID(ctx context.Context, id int64) (*models.Sprin
 
 	sprint := &models.Sprint{}
 	var description sql.NullString
-	var habitID sql.NullInt64
-	var minSeries sql.NullInt64
-	var percentIncrease sql.NullInt64
 	var sprintType string
 
 	err = r.db.QueryRowContext(ctx, query, args...).Scan(
@@ -37,9 +34,6 @@ func (r *Repository) GetSprintByID(ctx context.Context, id int64) (*models.Sprin
 		&sprint.TargetDays,
 		&sprint.CoinsReward,
 		&sprint.IsActive,
-		&habitID,
-		&minSeries,
-		&percentIncrease,
 		&sprint.CreatedAt,
 		&sprint.UpdatedAt,
 	)
@@ -55,23 +49,12 @@ func (r *Repository) GetSprintByID(ctx context.Context, id int64) (*models.Sprin
 	if description.Valid {
 		sprint.Description = description.String
 	}
-	if habitID.Valid {
-		sprint.HabitID = &habitID.Int64
-	}
-	if minSeries.Valid {
-		ms := int(minSeries.Int64)
-		sprint.MinSeries = &ms
-	}
-	if percentIncrease.Valid {
-		pi := int(percentIncrease.Int64)
-		sprint.PercentIncrease = &pi
-	}
 
 	return sprint, nil
 }
 
 func (r *Repository) GetAllSprints(ctx context.Context, isActive *bool) ([]*models.Sprint, error) {
-	builder := sq.Select("id", "title", "description", "type", "target_days", "coins_reward", "is_active", "habit_id", "min_series", "percent_increase", "created_at", "updated_at").
+	builder := sq.Select("id", "title", "description", "type", "target_days", "coins_reward", "is_active", "created_at", "updated_at").
 		PlaceholderFormat(sq.Dollar).
 		From("sprints")
 
@@ -96,9 +79,6 @@ func (r *Repository) GetAllSprints(ctx context.Context, isActive *bool) ([]*mode
 	for rows.Next() {
 		sprint := &models.Sprint{}
 		var description sql.NullString
-		var habitID sql.NullInt64
-		var minSeries sql.NullInt64
-		var percentIncrease sql.NullInt64
 		var sprintType string
 
 		err := rows.Scan(
@@ -109,9 +89,6 @@ func (r *Repository) GetAllSprints(ctx context.Context, isActive *bool) ([]*mode
 			&sprint.TargetDays,
 			&sprint.CoinsReward,
 			&sprint.IsActive,
-			&habitID,
-			&minSeries,
-			&percentIncrease,
 			&sprint.CreatedAt,
 			&sprint.UpdatedAt,
 		)
@@ -122,17 +99,6 @@ func (r *Repository) GetAllSprints(ctx context.Context, isActive *bool) ([]*mode
 		sprint.Type = models.SprintType(sprintType)
 		if description.Valid {
 			sprint.Description = description.String
-		}
-		if habitID.Valid {
-			sprint.HabitID = &habitID.Int64
-		}
-		if minSeries.Valid {
-			ms := int(minSeries.Int64)
-			sprint.MinSeries = &ms
-		}
-		if percentIncrease.Valid {
-			pi := int(percentIncrease.Int64)
-			sprint.PercentIncrease = &pi
 		}
 
 		sprints = append(sprints, sprint)
@@ -148,8 +114,8 @@ func (r *Repository) GetAllSprints(ctx context.Context, isActive *bool) ([]*mode
 func (r *Repository) CreateSprint(ctx context.Context, sprint *models.Sprint) (*models.Sprint, error) {
 	builder := sq.Insert("sprints").
 		PlaceholderFormat(sq.Dollar).
-		Columns("title", "description", "type", "target_days", "coins_reward", "is_active", "habit_id", "min_series", "percent_increase").
-		Values(sprint.Title, sprint.Description, string(sprint.Type), sprint.TargetDays, sprint.CoinsReward, sprint.IsActive, sprint.HabitID, sprint.MinSeries, sprint.PercentIncrease).
+		Columns("title", "description", "type", "target_days", "coins_reward", "is_active").
+		Values(sprint.Title, sprint.Description, string(sprint.Type), sprint.TargetDays, sprint.CoinsReward, sprint.IsActive).
 		Suffix("RETURNING id, created_at, updated_at")
 
 	query, args, err := builder.ToSql()
@@ -185,9 +151,6 @@ func (r *Repository) UpdateSprint(ctx context.Context, sprint *models.Sprint) er
 		Set("target_days", sprint.TargetDays).
 		Set("coins_reward", sprint.CoinsReward).
 		Set("is_active", sprint.IsActive).
-		Set("habit_id", sprint.HabitID).
-		Set("min_series", sprint.MinSeries).
-		Set("percent_increase", sprint.PercentIncrease).
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": sprint.ID})
 

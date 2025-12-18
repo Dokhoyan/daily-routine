@@ -135,7 +135,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 
 	corsMiddleware := a.serviceProvider.CORSMiddleware()
 	authMiddleware := middleware.AuthMiddleware(a.serviceProvider.AuthService(ctx))
-	adminMiddleware := middleware.AdminMiddleware(a.serviceProvider.UserService(ctx))
+	adminMiddleware := middleware.AdminMiddleware(a.serviceProvider.AdminConfig())
 
 	publicMux := http.NewServeMux()
 	authImpl.RegisterRoutes(publicMux)
@@ -168,7 +168,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	mux.Handle("/sprints", protectedHandler)
 	mux.Handle("/sprints/", protectedHandler)
 
-	// Админские роуты для управления спринтами
+	// Админские роуты для управления спринтами (только Basic Auth, без JWT)
 	adminMux := http.NewServeMux()
 	adminMux.HandleFunc("/sprints", sprintImpl.Create)
 	adminMux.HandleFunc("/sprints/", func(w http.ResponseWriter, r *http.Request) {
@@ -176,9 +176,11 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 			sprintImpl.Update(w, r)
 		} else if r.Method == http.MethodDelete {
 			sprintImpl.Delete(w, r)
+		} else if r.Method == http.MethodGet {
+			sprintImpl.GetAll(w, r)
 		}
 	})
-	adminHandler := corsMiddleware(authMiddleware(adminMiddleware(adminMux)))
+	adminHandler := corsMiddleware(adminMiddleware(adminMux))
 	mux.Handle("/admin/sprints", adminHandler)
 	mux.Handle("/admin/sprints/", adminHandler)
 

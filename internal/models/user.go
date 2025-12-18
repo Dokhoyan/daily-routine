@@ -9,7 +9,6 @@ type User struct {
 	PhotoURL  string    `json:"photo_url"`
 	AuthDate  time.Time `json:"auth_date"`
 	Coins     int       `json:"coins"`
-	IsAdmin   bool      `json:"is_admin"`
 }
 
 type TokenPair struct {

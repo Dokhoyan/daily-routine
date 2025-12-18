@@ -18,15 +18,12 @@ func (s *serv) Create(ctx context.Context, req *models.CreateSprintRequest) (*mo
 	}
 
 	sprint := &models.Sprint{
-		Title:           req.Title,
-		Description:     req.Description,
-		Type:            req.Type,
-		TargetDays:      req.TargetDays,
-		CoinsReward:     req.CoinsReward,
-		IsActive:        true,
-		HabitID:         req.HabitID,
-		MinSeries:       req.MinSeries,
-		PercentIncrease: req.PercentIncrease,
+		Title:       req.Title,
+		Description: req.Description,
+		Type:        req.Type,
+		TargetDays:  req.TargetDays,
+		CoinsReward: req.CoinsReward,
+		IsActive:    true,
 	}
 
 	createdSprint, err := s.sprintRepo.CreateSprint(ctx, sprint)
@@ -41,30 +38,18 @@ func (s *serv) validateSprintRequest(req *models.CreateSprintRequest) error {
 	if req.Title == "" {
 		return fmt.Errorf("title is required")
 	}
-	if req.TargetDays <= 0 {
-		return fmt.Errorf("target_days must be greater than 0")
-	}
+	// target_days проверяется отдельно для all_habits
 	if req.CoinsReward < 0 {
 		return fmt.Errorf("coins_reward cannot be negative")
 	}
 
 	switch req.Type {
-	case models.SprintTypeHabitSeries:
-		if req.HabitID == nil {
-			return fmt.Errorf("habit_id is required for habit_series sprint")
-		}
-		if req.MinSeries == nil || *req.MinSeries <= 0 {
-			return fmt.Errorf("min_series must be greater than 0 for habit_series sprint")
-		}
-	case models.SprintTypeHabitIncrease:
-		if req.HabitID == nil {
-			return fmt.Errorf("habit_id is required for habit_increase sprint")
-		}
-		if req.PercentIncrease == nil || *req.PercentIncrease <= 0 {
-			return fmt.Errorf("percent_increase must be greater than 0 for habit_increase sprint")
-		}
 	case models.SprintTypeAllHabits:
-		// Нет дополнительных требований
+		if req.TargetDays <= 0 {
+			return fmt.Errorf("target_days must be greater than 0 for all_habits sprint")
+		}
+	case models.SprintTypeNewHabit:
+		// Нет дополнительных требований, target_days не нужен
 	default:
 		return fmt.Errorf("invalid sprint type: %s", req.Type)
 	}

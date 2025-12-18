@@ -1,40 +1,40 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
-	"strconv"
 
+	"github.com/Dokhoyan/daily-routine/internal/config"
 	"github.com/Dokhoyan/daily-routine/internal/http-server/response"
-	"github.com/Dokhoyan/daily-routine/internal/service"
 )
 
-func AdminMiddleware(userService service.UserService) func(http.Handler) http.Handler {
+type adminContextKey string
+
+const AdminContextKey adminContextKey = "is_admin"
+
+// AdminMiddleware проверяет Basic Auth с логином/паролем из .env
+func AdminMiddleware(adminCfg config.AdminConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			userIDStr, err := GetUserIDFromContext(r.Context())
-			if err != nil {
-				response.WriteError(w, http.StatusUnauthorized, "User not authenticated")
+			username, password, ok := r.BasicAuth()
+			if !ok {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Admin"`)
+				response.WriteError(w, http.StatusUnauthorized, "Admin authentication required")
 				return
 			}
 
-			userID, err := strconv.ParseInt(userIDStr, 10, 64)
-			if err != nil {
-				response.WriteError(w, http.StatusBadRequest, "Invalid user ID")
+			if username != adminCfg.GetUsername() || password != adminCfg.GetPassword() {
+				response.WriteError(w, http.StatusUnauthorized, "Invalid admin credentials")
 				return
 			}
 
-			user, err := userService.GetByID(r.Context(), userID)
-			if err != nil {
-				response.WriteError(w, http.StatusUnauthorized, "User not found")
-				return
-			}
-
-			if !user.IsAdmin {
-				response.WriteError(w, http.StatusForbidden, "Admin access required")
-				return
-			}
-
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), AdminContextKey, true)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func IsAdmin(ctx context.Context) bool {
+	isAdmin, ok := ctx.Value(AdminContextKey).(bool)
+	return ok && isAdmin
 }

@@ -29,9 +29,6 @@ func (s *serv) Update(ctx context.Context, id int64, req *models.CreateSprintReq
 	existingSprint.Type = req.Type
 	existingSprint.TargetDays = req.TargetDays
 	existingSprint.CoinsReward = req.CoinsReward
-	existingSprint.HabitID = req.HabitID
-	existingSprint.MinSeries = req.MinSeries
-	existingSprint.PercentIncrease = req.PercentIncrease
 
 	if err := s.sprintRepo.UpdateSprint(ctx, existingSprint); err != nil {
 		return nil, fmt.Errorf("failed to update sprint: %w", err)

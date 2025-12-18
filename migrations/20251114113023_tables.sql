@@ -1,5 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
+
 CREATE TABLE users (
     id          BIGINT PRIMARY KEY,
     username    TEXT,
@@ -54,19 +55,40 @@ CREATE TABLE token_blacklist (
     reason          TEXT
 );
 
+CREATE TYPE sprint_type AS ENUM ('all_habits', 'new_habit');
+
 CREATE TABLE sprints (
     id              BIGSERIAL PRIMARY KEY,
     title           TEXT NOT NULL,
-    value           INTEGER NOT NULL,
-    current_value   INTEGER DEFAULT 0 CHECK (current_value <= value),
-    coins           INTEGER NOT NULL,
-    created_at      TIMESTAMP DEFAULT NOW()
+    description     TEXT,
+    type            sprint_type NOT NULL,
+    target_days     INTEGER DEFAULT 0,
+    coins_reward    INTEGER NOT NULL DEFAULT 0,
+    is_active       BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE user_sprint_progress (
+    id              BIGSERIAL PRIMARY KEY,
+    user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sprint_id       BIGINT NOT NULL REFERENCES sprints(id) ON DELETE CASCADE,
+    current_days    INTEGER DEFAULT 0,
+    is_completed    BOOLEAN DEFAULT FALSE,
+    completed_at    TIMESTAMP,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, sprint_id)
+);
+
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+
+DROP TABLE IF EXISTS user_sprint_progress;
 DROP TABLE IF EXISTS sprints;
+DROP TYPE IF EXISTS sprint_type;
 DROP TABLE IF EXISTS token_blacklist;
 DROP TABLE IF EXISTS refresh_tokens;
 DROP TABLE IF EXISTS habits;
@@ -74,5 +96,6 @@ DROP TYPE IF EXISTS habit_type;
 DROP TYPE IF EXISTS habit_format;
 DROP TABLE IF EXISTS user_settings;
 DROP TABLE IF EXISTS users;
+
 -- +goose StatementEnd
 

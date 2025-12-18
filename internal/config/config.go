@@ -43,3 +43,8 @@ type TestConfig interface {
 	IsTestModeEnabled() bool
 	GetTestUserID() int64
 }
+
+type AdminConfig interface {
+	GetUsername() string
+	GetPassword() string
+}

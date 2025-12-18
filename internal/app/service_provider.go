@@ -30,6 +30,7 @@ type serviceProvider struct {
 	corsConfig     config.CORSConfig
 	testConfig     config.TestConfig
 	authConfig     config.AuthConfig
+	adminConfig    config.AdminConfig
 
 	db   *sql.DB
 	repo *postgresRepo.Repository
@@ -120,6 +121,18 @@ func (s *serviceProvider) AuthConfig() config.AuthConfig {
 	return s.authConfig
 }
 
+func (s *serviceProvider) AdminConfig() config.AdminConfig {
+	if s.adminConfig == nil {
+		cfg, err := config.NewAdminConfig()
+		if err != nil {
+			logger.Fatalf("failed to get admin config: %s", err.Error())
+		}
+		logger.Info("admin config loaded")
+		s.adminConfig = cfg
+	}
+	return s.adminConfig
+}
+
 func (s *serviceProvider) DB(ctx context.Context) *sql.DB {
 	if s.db == nil {
 		pgCfg := s.PGConfig()
@@ -177,7 +190,7 @@ func (s *serviceProvider) SettingsService(ctx context.Context) service.SettingsS
 func (s *serviceProvider) HabitService(ctx context.Context) service.HabitService {
 	if s.habitService == nil {
 		repo := s.Repository(ctx)
-		s.habitService = habitService.NewService(repo)
+		s.habitService = habitService.NewService(repo, repo, repo)
 	}
 	return s.habitService
 }
