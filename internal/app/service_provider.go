@@ -258,9 +258,9 @@ func (s *serviceProvider) CORSMiddleware() func(http.Handler) http.Handler {
 			shouldAllow := false
 			originToAllow := ""
 
-			// В тестовом режиме разрешаем два origin
+			// В тестовом режиме разрешаем несколько origin
 			if testModeEnabled && origin != "" {
-				if origin == "https://daily-routine.ru" || origin == "http://localhost:3000" {
+				if origin == "https://daily-routine.ru" || origin == "http://localhost:3000" || origin == "http://localhost:5173" {
 					shouldAllow = true
 					originToAllow = origin
 				}
